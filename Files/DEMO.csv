@@ -1,5 +1,5 @@
 ﻿"#1 = ORIENTED_EDGE ( 'NONE', *, *, #401, .T. ) ;"
-"#2 = DATE_TIME_ROLE ( 'classification_date' ) ;"
+#2 = DATE_TIME_ROLE ( 'classification_date' ) ;
 "#3 = DIRECTION ( 'NONE',  ( -1.000000000000000000, 0.000000000000000000, 0.000000000000000000 ) ) ;"
 "#4 = EDGE_LOOP ( 'NONE', ( #458, #388 ) ) ;"
 "#5 = ADVANCED_FACE ( 'NONE', ( #98 ), #498, .F. ) ;"

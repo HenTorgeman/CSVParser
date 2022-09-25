@@ -2,12 +2,6 @@ const http = require('http');
 const https = require('https');
 
 const express = require("express");
-const rl = require("readline");
-const Utilis = require("./Parser");
-const Action = require("./Model/Action");
-const Circel = require("./Model/Circel");
-const Point = require("./Model/Point");
-const CircelsGroup = require('./Model/CircelsGroup');
 const Calc = require('./Routes/Calc');
 
 

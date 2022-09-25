@@ -8,6 +8,94 @@ const fileUtilit = require("../Files");
 const fs = require("fs");
 const Direction = require("../Model/Direction");
 const { filter } = require("mongoose/lib/helpers/query/validOps");
+const CoCircel = require("../Model/CoCircel");
+
+const cirecelRepresentIdArr = [];
+// const filePath = "Files/DEMO.csv";
+const filePath = "Files/1001570.csv";
+// const filePath = "Files/10015120.csv";
+
+
+
+//-------------------## CO-Circels
+
+// const CreateCoCircels = async (req, res, next) => {
+//     const coCircelsArr = [];
+//     const passCircelArr = [];
+//     Circel.find({})
+//         .exec((err, docs) => {
+//             if (err) console.log(err);
+//             else {
+//                 for (let i = 0; i < docs.length; i++) {
+//                     var circ = docs[i];
+//                     FindCompleteCircel(circ, (arr) => {
+//                         passCircelArr.concat(arr);
+
+//                         var coCirc = new CoCircel(){
+
+//                             circels = arr,
+
+
+
+
+//                         }
+
+
+
+//                     })
+
+
+
+
+//                 }
+//             }
+//         });
+// }
+
+// function FindCompleteCircel(circelObj, callback) {
+
+//     var coCircelArr = [];
+//     Circel.find({ AxisC: circelObj.axisC }, function (err, docs) {
+//         if (err) callback(err);
+//         else {
+
+//             for (let i = 0; i < docs.length; i++) {
+//                 var otherCirecel = docs[i];
+//                 if (axisC == "X") {
+//                     if (otherCirecel.y === circelObj.y && otherCirecel.z === circelObj.z) {
+//                         coCircelArr.push(otherCirecel);
+//                     }
+//                 }
+//                 else {
+//                     if (axisC == "Y") {
+//                         if (otherCirecel.x === circelObj.x && otherCirecel.z === circelObj.z) {
+//                             coCircelArr.push(otherCirecel);
+//                         }
+//                     }
+//                     else {
+//                         if (axisC == "Z") {
+//                             if (otherCirecel.x === circelObj.x && otherCirecel.y === circelObj.y) {
+//                                 coCircelArr.push(otherCirecel);
+//                             }
+
+//                         }
+//                     }
+//                 }
+//             }
+
+//             console.log("coCircelArr Done");
+//             console.log(coCircelArr);
+//             callback(coCircelArr);
+//         }
+//     });
+
+
+//     //Need to find the related circels and removed them from the tempArr
+//     //Need to return list of circels Id? 
+
+
+
+// }
 
 
 //-------------------## Directions
@@ -21,8 +109,8 @@ const CreateDirections = async (req, res, next) => {
             else {
                 for (let i = 0; i < docs.length; i++) {
                     var circelDoc = docs[i];
-                    var axisB = getCircelAxisB(circelDoc);
-                    var axisC = getCircelAxisC(circelDoc);
+                    var axisB = GetCircelAxisB(circelDoc);
+                    var axisC = GetCircelAxisC(circelDoc);
 
                     var direction = new Direction({
                         index: counter,
@@ -47,39 +135,7 @@ const CreateDirections = async (req, res, next) => {
 
 
 }
-
-const RemoveDuplicateDirectionDB = async (req, res, next) => {
-
-    const duplicateArr = [];
-    Direction.find({})
-        .exec((err, docs) => {
-            if (err) console.log(err);
-            else {
-                for (let i = 0; i < docs.length; i++) {
-                    var DirectionObj = docs[i];
-
-                    const duplicateDirections = docs.filter((s) => { return (s._id != DirectionObj._id && s.dirC.x === DirectionObj.dirC.x && s.dirC.y === DirectionObj.dirC.y && s.dirC.z === DirectionObj.dirC.z && s.dirB.x === DirectionObj.dirB.x && s.dirB.y === DirectionObj.dirB.y && s.dirB.z === DirectionObj.dirB.z) });
-                    if (duplicateDirections.length > 0) {
-                        duplicateDirections.forEach(d => {
-                            duplicateArr.push(d._id);
-                        });
-                    }
-                }
-
-            }
-        });
-
-    removeArr(duplicateArr, (response) => {
-        if (response == "Deleted") {
-            res.status(200).send("ok");
-
-        }
-    });
-}
-
-
-
-function getCircelAxisB(circel) {
+function GetCircelAxisB(circel) {
 
     var axis = "";
     if (circel.pointsB.x == 1 || circel.pointsB.x == -1) {
@@ -98,8 +154,7 @@ function getCircelAxisB(circel) {
 
     return axis;
 }
-
-function getCircelAxisC(circel) {
+function GetCircelAxisC(circel) {
 
     var axis = "";
     if (circel.pointsC.x == 1 || circel.pointsC.x == -1) {
@@ -118,50 +173,35 @@ function getCircelAxisC(circel) {
 
     return axis;
 }
-function saveArr(objectArr) {
-
-    if (objectArr.length > 0) {
-        var obj = objectArr.pop();
-        obj.save(function (err, saved) {
-            if (err) throw err;
-            else {
-
-                console.log("Saved " + saved._id);
+function RemoveDuplicatesDirections(arr, callback) {
+    var newArr = arr;
+    var len = arr.length;
+    for (let i = 0; i < len; i++) {
+        var directionObj = newArr[i];
+        for (let j = 0; j < len; j++) {
+            var tempDirectionObj = newArr[j];
+            if (directionObj.index != tempDirectionObj.index && IsSamePoint(directionObj.dirB, tempDirectionObj.dirB) === true && IsSamePoint(directionObj.dirC, tempDirectionObj.dirC) === true) {
+                newArr = newArr.slice(0, j).concat(newArr.slice(j + 1, newArr.length))
+                len = newArr.length;
             }
-
-            if (objectArr.length > 0)
-                saveArr(objectArr);
-            else
-                console.log("Done save");
-        });
-    }
-}
-function removeArr(objectArr, callback) {
-
-    if (objectArr.length > 0) {
-        for (let i = 0; i < objectArr.length; i++) {
-            Direction.deleteOne({ id: objectArr[i] }, function (err) {
-                if (err)
-                    console.log("err" + err.message);
-                else {
-                    console.log("Deleted");
-
-                }
-                // deleted at most one tank document
-            });
         }
-        callback("Deleted");
     }
+
+    for (let i = 0; i < newArr.length; i++) {
+        newArr[i].index = i;
+    }
+
+    callback(newArr);
 }
 
 //-------------------## Circels
 
 //The function is reading the file and find& create his circels.
-const ReadFile = async (req, res, next) => {
-    const data = fs.readFileSync('Files/10015120.csv', "utf8").split("\r\n");
+const GetCircels = async (req, res, next) => {
+    const data = fs.readFileSync(filePath, "utf8").split("\r\n");
     const circelArr = [];
     var fileArr = data;
-    for (let i = 0; i < fileArr.length; i++) {
+    for (let i = 16; i < fileArr.length; i++) {
         var row = fileArr[i].split(" ");
         console.log("R" + row[0]);
         CreateNewCircel(row, fileArr, (response) => {
@@ -174,12 +214,11 @@ const ReadFile = async (req, res, next) => {
     RemoveDuplicates(circelArr, (response) => {
 
         console.log("Response from RemoveDuplicates : " + response.length);
-        saveList(response);
+        saveArr(response);
         res.status(200).send("ok");
     });
 
 }
-
 function CreateNewCircel(rowArr, fileArr, callback) {
     try {
         if (rowArr[2] === "CIRCLE") {
@@ -190,19 +229,18 @@ function CreateNewCircel(rowArr, fileArr, callback) {
             var axisIndex = 0;
             const pointsArr = [];
 
-            var circle = Circel({
+            var circel = Circel({
                 index: index,
                 indexText: indexText,
                 actionName: name.toString().replace(/[^\w\s]/gi, ''),
-                radius: parseFloat(radius).toFixed(3),
-                points: [],
+                radius: parseFloat(radius).toFixed(2),
             });
 
             //get the direction AXIS2_PLACEMENT_3D
             for (let i = 0; i < rowArr.length; i++) {
                 if (rowArr[i].includes("#")) {
                     if (rowArr[i] != indexText) {
-                        circle.relatedActionIndex.push(rowArr[i]);
+                        circel.relatedActionIndex.push(rowArr[i]);
                         axisIndex = rowArr[i].toString().replace(/[^\w\s]/gi, '');
                     }
                 }
@@ -234,8 +272,7 @@ function CreateNewCircel(rowArr, fileArr, callback) {
                                     y: parseFloat(y).toFixed(3),
                                     z: parseFloat(z).toFixed(3),
                                 });
-                                circle.points.push(pointA);
-                                circle.pointsA = pointA;
+                                circel.pointsA = pointA;
                                 pointsArr.push(pointA);
                             }
                             fileUtilit.GetRow(fileArr, cp2, (dataB) => {
@@ -258,8 +295,7 @@ function CreateNewCircel(rowArr, fileArr, callback) {
                                             z: z
                                         });
 
-                                        circle.points.push(pointB);
-                                        circle.pointsB = pointB;
+                                        circel.pointsB = pointB;
                                         pointsArr.push(pointB);
 
 
@@ -284,12 +320,14 @@ function CreateNewCircel(rowArr, fileArr, callback) {
                                                     y: y,
                                                     z: z
                                                 });
-                                                circle.points.push(pointC);
-                                                circle.pointsC = pointC;
+                                                circel.pointsC = pointC;
                                                 pointsArr.push(pointC);
 
+                                                circel.AxisB = GetCircelAxisB(circel);
+                                                circel.AxisC = GetCircelAxisC(circel);
+
                                             }
-                                            callback(circle);
+                                            callback(circel);
 
                                         }
                                     });
@@ -304,6 +342,63 @@ function CreateNewCircel(rowArr, fileArr, callback) {
         callback(null);
     } catch (err) {
         console.log(err);
+    }
+}
+
+function RemoveDuplicates(arr, callback) {
+
+    var tempArr = [];
+    for (let i = 0; i < arr.length; i++) {
+
+        var obj = arr.pop();
+        IsCircleExist(obj, (response) => {
+
+            if (response === true) {
+            }
+            else {
+                tempArr.push(obj);
+            }
+        })
+    }
+
+    for (let i = 0; i < tempArr.length; i++) {
+        tempArr[i].index = i;
+    }
+
+    callback(tempArr)
+
+}
+
+
+//-------------------## Helpers
+function IsSamePoint(obj1, obj2) {
+    if (obj1.x === obj2.x) {
+        if (obj1.y === obj2.y) {
+            if (obj1.z === obj2.z) {
+                return true;
+            }
+            else return false;
+        }
+        else return false;
+    }
+    else return false;
+}
+function saveArr(objectArr) {
+
+    if (objectArr.length > 0) {
+        var obj = objectArr.pop();
+        obj.save(function (err, saved) {
+            if (err) throw err;
+            else {
+
+                console.log("Saved " + saved._id);
+            }
+
+            if (objectArr.length > 0)
+                saveArr(objectArr);
+            else
+                console.log("Done save");
+        });
     }
 }
 function IsCircleExist(obj, callback) {
@@ -329,105 +424,26 @@ function IsCircleExist(obj, callback) {
         });
     callback(false);
 }
-function IsDirectionExist(DirectionObj, callback) {
-    Direction.find({})
-        .exec((err, docs) => {
-            if (err) console.log(err);
-            else {
-                if (docs.length != undefined && docs.length > 1) {
-                    //const samePoints = docs.filter((s) => { return (s.dirC.x === circelObj.pointsC.x && s.dirC.y === obj.pointsC.y && s.dirC.z === obj.pointsC.z && s.dirB.x === obj.pointsB.x && s.dirB.y === obj.pointsB.y && s.dirB.z === obj.pointsB.z) });
-                    const samePoints = docs.filter((s) => {
-                        return (s.dirC.x === DirectionObj.dirC.x && s.dirC.y === DirectionObj.dirC.y && s.dirC.z === DirectionObj.dirC.z && s.dirB.x === DirectionObj.dirB.x && s.dirB.y === DirectionObj.dirB.y && s.dirB.z === DirectionObj.dirB.z)
-                    });
-                    if (samePoints.length > 0) {
-                        callback(true);
-                    }
-                    else {
-                        callback(false);
-                    }
-                }
+function removeArr(objectArr, callback) {
+
+    if (objectArr.length > 0) {
+        for (let i = 0; i < objectArr.length; i++) {
+            Direction.deleteOne({ id: objectArr[i] }, function (err) {
+                if (err)
+                    console.log("err" + err.message);
                 else {
-                    callback(false);
+                    console.log("Deleted");
+
                 }
-            }
-        });
-    callback(false);
-
-}
-function RemoveDuplicates(arr, callback) {
-
-    var tempArr = [];
-    for (let i = 0; i < arr.length; i++) {
-
-        var obj = arr.pop();
-        IsCircleExist(obj, (response) => {
-
-            if (response === true) {
-            }
-            else {
-                tempArr.push(obj);
-            }
-        })
-    }
-    callback(tempArr)
-
-}
-function RemoveDuplicatesDirections(arr, callback) {
-
-    var tempArr = [];
-    for (let i = 0; i < arr.length; i++) {
-
-        var obj = arr.pop();
-        IsDirectionExist(obj, (response) => {
-
-            if (response === true) {
-                console.log("Same Direction")
-            }
-            else {
-                tempArr.push(obj);
-            }
-        })
-    }
-    callback(tempArr);
-}
-
-
-function RemoveDuplicatesDirections(arr, callback) {
-
-    var newArr = [];
-    var len = arr.length;
-    for (let i = 0; i < len; i++) {
-
-        var DirectionObj = arr.pop();
-        const filtered = arr.filter((s) => { return !(s.dirC.x === DirectionObj.dirC.x && s.dirC.y === DirectionObj.dirC.y && s.dirC.z === DirectionObj.dirC.z && s.dirB.x === DirectionObj.dirB.x && s.dirB.y === DirectionObj.dirB.y && s.dirB.z === DirectionObj.dirB.z) });
-        if (filtered.length > 0) {
-            // arr.reduce
+                // deleted at most one tank document
+            });
         }
-        newArr.push(DirectionObj);
+        callback("Deleted");
     }
-
 }
-
-
-// if (filtered.length > 0) {
-
-//     tempArr.push(filtered[0]);
-// }
-// else {
-
-//     tempArr.push(DirectionObj);
-
-// }
-
-// }
-
-// callback(tempArr);
-// }
-
 
 
 module.exports = {
-    ReadFile,
+    GetCircels,
     CreateDirections,
-    RemoveDuplicateDirectionDB
 };

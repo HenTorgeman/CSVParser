@@ -18,10 +18,16 @@ const circelSchema = Base.discriminator("Circel",
         pointsC: {
             type: Object
         },
-        points: {
-            type: [Object]
+        AxisB: {
+            type: String,
+            enum: ['X', 'Y', 'Z'],
+            default: 'X'
         },
-
+        AxisC: {
+            type: String,
+            enum: ['X', 'Y', 'Z'],
+            default: 'X'
+        },
     })
 );
 

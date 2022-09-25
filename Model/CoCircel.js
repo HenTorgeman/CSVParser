@@ -1,18 +1,17 @@
 const mongoose = require("mongoose");
 
-const DirectionSchema = new mongoose.Schema({
+const CoCircelSchema = new mongoose.Schema({
     index: {
         type: Number,
         default: 0,
     },
-    dirB: {
-        type: Object
-    },
-    dirC: {
-        type: Object
-    },
-    Circels: {
+    circels: {
         type: [Object]
+    },
+    type: {
+        type: String,
+        enum: ['HOLE', 'BHOLE', 'PIN', 'RADIUS'],
+        default: 'X'
     },
     AxisB: {
         type: String,
@@ -24,5 +23,7 @@ const DirectionSchema = new mongoose.Schema({
         enum: ['X', 'Y', 'Z'],
         default: 'X'
     },
+
+
 });
-module.exports = mongoose.model("Direction", DirectionSchema);
+module.exports = mongoose.model("CoCircel", CoCircelSchema);

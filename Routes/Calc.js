@@ -3,11 +3,7 @@ const router = express.Router();
 const Calc = require("../Controllers/Calc");
 
 
-router.get("/ReadFile", Calc.ReadFile);
+router.get("/GetCircels", Calc.GetCircels);
 router.get("/CreateDirections", Calc.CreateDirections);
-router.get("/RemoveDuplicateDirectionDB", Calc.RemoveDuplicateDirectionDB);
-
-
-
 
 module.exports = router;

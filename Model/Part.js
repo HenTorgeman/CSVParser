@@ -1,28 +1,23 @@
 const mongoose = require("mongoose");
 
-const DirectionSchema = new mongoose.Schema({
+const PartSchema = new mongoose.Schema({
     index: {
         type: Number,
         default: 0,
     },
-    dirB: {
-        type: Object
-    },
-    dirC: {
-        type: Object
-    },
     Circels: {
         type: [Object]
     },
-    AxisB: {
+    type: {
         type: String,
-        enum: ['X', 'Y', 'Z'],
+        enum: ['HOLE', 'BHOLE', 'PIN', 'RADIUS'],
         default: 'X'
     },
     AxisC: {
         type: String,
         enum: ['X', 'Y', 'Z'],
         default: 'X'
+
     },
 });
-module.exports = mongoose.model("Direction", DirectionSchema);
+module.exports = mongoose.model("Part", PartSchema);

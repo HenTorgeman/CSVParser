@@ -11,9 +11,6 @@ const actionSchema = new mongoose.Schema({
   actionName: {
     type: String,
   },
-  relatedActions: {
-    type: [mongoose.Schema.Types.ObjectId],
-  },
   relatedActionIndex: {
     type: [String],
   },
