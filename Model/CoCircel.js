@@ -11,16 +11,16 @@ const CoCircelSchema = new mongoose.Schema({
     type: {
         type: String,
         enum: ['HOLE', 'BHOLE', 'PIN', 'RADIUS'],
-        default: 'X'
+        default: 'HOLE'
     },
     AxisB: {
         type: String,
-        enum: ['X', 'Y', 'Z'],
+        enum: ['X', 'Y', 'Z','-X','-Y','-Z'],
         default: 'X'
     },
     AxisC: {
         type: String,
-        enum: ['X', 'Y', 'Z'],
+        enum: ['X', 'Y', 'Z','-X','-Y','-Z'],
         default: 'X'
     },
 

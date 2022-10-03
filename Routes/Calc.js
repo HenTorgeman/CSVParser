@@ -5,5 +5,7 @@ const Calc = require("../Controllers/Calc");
 
 router.get("/GetCircels", Calc.GetCircels);
 router.get("/CreateDirections", Calc.CreateDirections);
-
+router.get("/CreateCoCircels", Calc.CreateCoCircels);
+router.get("/CreateCoCircelsDB", Calc.CreateCoCircelsDB);
+router.get("/GetCoCircelsDataTest", Calc.GetCoCircelsDataTest);
 module.exports = router;

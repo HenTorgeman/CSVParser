@@ -19,5 +19,16 @@ const PartSchema = new mongoose.Schema({
         default: 'X'
 
     },
+    boundingBox:{
+        type: Number,
+        default: 0,
+    },
+    surfaceNumber:{
+        type: Number,
+        default: 2,
+    },
+    directions:{
+        type: [Object]
+    }
 });
 module.exports = mongoose.model("Part", PartSchema);
