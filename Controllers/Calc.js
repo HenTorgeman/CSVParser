@@ -12,9 +12,9 @@ const CoCircel = require("../Model/CoCircel");
 const e = require("express");
 
 const cirecelRepresentIdArr = [];
-// const filePath = "Files/DEMO.csv";
+const filePath = "Files/DEMO.csv";
 // const filePath = "Files/1001570.csv";
-const filePath = "Files/10015120.csv";
+//const filePath = "Files/10015120.csv";
 var coCircelsArr = [];
 var passCircelArr = [];
 
@@ -83,7 +83,7 @@ const CreateCoCircels = async (req, res, next) => {
                     var circ = docs[i];
                     console.log("Get All represents of:" + circ.index)
 
-                    FindCompleteCircel(circ, (coCirc) => {
+                    CreateCompleteCircel_AxisValues(circ, (coCirc) => {
                         coCirc.index = indexCounter;
                         coCircelsArr.push(coCirc);
                         indexCounter++;
@@ -105,11 +105,75 @@ const CreateCoCircelsDB = async (req, res, next) => {
 
 const OptimizeCoCircelsDB = async (req, res, next) => {
 
+
+    // biggest circel should be with 3 circels inside and its PIN.
+
+    // Rdius should be 2 circels
+    // Hole should be 2 circels 
+    // pin should be 3 circels
+
+
+    CoCircel.find({ RepreCount: { $ne: 2 } }, function (err, docs) {
+        if (err) {
+            console.log("##------");
+            console.log(err);
+            callback(err);
+        }
+        else {
+
+            
+            var len=docs.length;
+            console.log('docs : '+len)
+            for(let i=0;i<len;i++){
+                var coCircel=docs[i];
+                CreateCompleteCircel_Radius(coCircel,(data)=>{
+                    console.log(data);
+                })
+            }
+            res.status(200).send('ok final');
+        }
+    });
 }
 
-function FindCompleteCircel(circelObj, callback) {
+function CreateCompleteCircel_Radius(coCircel, callback) {
 
-    var coCircelArr = [];
+
+    var radius=coCircel.circels[0].radius;
+
+    var originalArray=coCircel.circels;
+    if(originalArray.length>1){
+        var newArray = coCircel.circels.filter(function (el){
+            return el.radius==radius
+        });
+
+        if(originalArray.length>newArray.length){
+
+            console.log("Split!");
+
+            var removalArray = originalArray.filter(function (el){
+                return !newArray.includes(el);
+            });
+        
+            console.log("Array1 "+newArray.length);
+            console.log("Array2 "+removalArray.length);
+        
+           
+        
+        
+        }
+        else{
+            console.log("No diffrent radius ?");
+        }
+    }   
+    else{
+        console.log("1 item ?");
+}
+    callback('ok');
+
+}
+
+
+function CreateCompleteCircel_AxisValues(circelObj, callback) {
 
     Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }, function (err, docs) {
         if (err) {
@@ -119,53 +183,68 @@ function FindCompleteCircel(circelObj, callback) {
         }
         else {
             var asix = circelObj.AxisB;
-            if (!passCircelArr.includes(circelObj._id.toString())) {
-                coCircelArr.push(circelObj);
-                passCircelArr.push(circelObj._id.toString());
-                for (let i = 0; i < docs.length; i++) {
-                    var otherCirecel = docs[i];
-                    if (otherCirecel._id.toString() !== circelObj._id.toString()) {
-                        if (asix === "X" || asix === "-X") {
-                            if (otherCirecel.pointsA.y === circelObj.pointsA.y || otherCirecel.pointsA.z === circelObj.pointsA.z) {
-                                if (!passCircelArr.includes(otherCirecel._id.toString())) {
-                                    coCircelArr.push(otherCirecel);
-                                    passCircelArr.push(otherCirecel._id.toString());
-                                }
-                            }
-                        }
-                        else {
-                            if (asix === "Y" || asix === "-Y") {
-                                if (otherCirecel.pointsA.x === circelObj.pointsA.x || otherCirecel.z === circelObj.pointsA.z) {
-                                    if (!passCircelArr.includes(otherCirecel._id.toString())) {
-                                        coCircelArr.push(otherCirecel);
-                                        passCircelArr.push(otherCirecel._id.toString());
-                                    }
-                                }
-                            }
-                               else {
-                                    if (asix === "Z" || asix === "-Z") {
-                                        if (otherCirecel.pointsA.x === circelObj.pointsA.x || otherCirecel.pointsA.y === circelObj.pointsA.y) {
-                                            if (!passCircelArr.includes(otherCirecel._id.toString())) {
-                                                coCircelArr.push(otherCirecel);
-                                                passCircelArr.push(otherCirecel._id.toString());
-                                            }
-                                        }
-                                    }
-                                }
+            var y=circelObj.pointsA.y;
+            var x=circelObj.pointsA.x;
+
+            var z=circelObj.pointsA.z;
+            var id=circelObj._id.toString();
+            var radius=circelObj.radius;
+            var newArr=[];
+            
+            if (!passCircelArr.includes(id)) {
+              
+                if (asix === "X" || asix === "-X") {
+                     newArr = docs.filter(function (e){
+                        return e.pointsA.y===y && e.pointsA.z===z 
+                    });
+                    if(newArr.length>3){
+                        var newArrRadius=newArr.filter(function(e){
+                            return e.radius==radius
+                        });
+                        if(newArrRadius.length>1){
+                            newArr=newArrRadius;
                         }
                     }
                 }
-            }
-            else {
-                console.log("Already Exist");
-            }
-            if (coCircelArr.length > 0) {
+                if (asix === "Y" || asix === "-Y") {
+                     newArr = docs.filter(function (e){
+                        return e.pointsA.x===x && e.pointsA.z===z 
+                    });
+                    if(newArr.length>3){
+                        var newArrRadius=newArr.filter(function(e){
+                            return e.radius==radius
+                        });
+                        if(newArrRadius.length>1){
+                            newArr=newArrRadius;
+                        }
+                    }
+                }
+                if (asix === "Z" || asix === "-Z") {
+                     newArr = docs.filter(function (e){
+                        return e.pointsA.y===y && e.pointsA.x===x
+                    });
+                    if(newArr.length>3){
+                        var newArrRadius=newArr.filter(function(e){
+                            return e.radius==radius
+                        });
+                        if(newArrRadius.length>1){
+                            newArr=newArrRadius;
+                        }
+                    }
+                }
+
+            if (newArr.length > 0) {
 
                 var coCirc = new CoCircel({
-                    circels: coCircelArr,
+                    circels: newArr,
                     AxisB: circelObj.AxisB,
                     AxisC: circelObj.AxisC,
                     radius: circelObj.radius,
+                    RepreCount:newArr.length
+                });
+
+                newArr.forEach(element => {
+                    passCircelArr.push(element._id.toString());
                 });
 
                 console.log("coCircelArr Done");
@@ -175,8 +254,84 @@ function FindCompleteCircel(circelObj, callback) {
                 console.log("Empty");
             }
         }
+        else {
+            console.log("Already Exist");
+        }
+        }
     });
 }
+
+// function CreateCompleteCircel_AxisValues(circelObj, callback) {
+
+//     var coCircelArr = [];
+
+//     Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }, function (err, docs) {
+//         if (err) {
+//             console.log("##------");
+//             console.log(err);
+//             callback(err);
+//         }
+//         else {
+//             var asix = circelObj.AxisB;
+//             if (!passCircelArr.includes(circelObj._id.toString())) {
+//                 coCircelArr.push(circelObj);
+//                 passCircelArr.push(circelObj._id.toString());
+//                 for (let i = 0; i < docs.length; i++) {
+//                     var otherCirecel = docs[i];
+//                     if (otherCirecel._id.toString() !== circelObj._id.toString()) {
+//                         if (asix === "X" || asix === "-X") {
+//                             if (otherCirecel.pointsA.y === circelObj.pointsA.y || otherCirecel.pointsA.z === circelObj.pointsA.z) {
+//                                 if (!passCircelArr.includes(otherCirecel._id.toString())) {
+//                                     coCircelArr.push(otherCirecel);
+//                                     passCircelArr.push(otherCirecel._id.toString());
+//                                 }
+//                             }
+//                         }
+//                         else {
+//                             if (asix === "Y" || asix === "-Y") {
+//                                 if (otherCirecel.pointsA.x === circelObj.pointsA.x || otherCirecel.z === circelObj.pointsA.z) {
+//                                     if (!passCircelArr.includes(otherCirecel._id.toString())) {
+//                                         coCircelArr.push(otherCirecel);
+//                                         passCircelArr.push(otherCirecel._id.toString());
+//                                     }
+//                                 }
+//                             }
+//                                else {
+//                                     if (asix === "Z" || asix === "-Z") {
+//                                         if (otherCirecel.pointsA.x === circelObj.pointsA.x || otherCirecel.pointsA.y === circelObj.pointsA.y) {
+//                                             if (!passCircelArr.includes(otherCirecel._id.toString())) {
+//                                                 coCircelArr.push(otherCirecel);
+//                                                 passCircelArr.push(otherCirecel._id.toString());
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                         }
+//                     }
+//                 }
+//             }
+//             else {
+//                 console.log("Already Exist");
+//             }
+//             if (coCircelArr.length > 0) {
+
+//                 var coCirc = new CoCircel({
+//                     circels: coCircelArr,
+//                     AxisB: circelObj.AxisB,
+//                     AxisC: circelObj.AxisC,
+//                     radius: circelObj.radius,
+//                     RepreCount:coCircelArr.length
+//                 });
+
+//                 console.log("coCircelArr Done");
+//                 callback(coCirc);
+//             }
+//             else {
+//                 console.log("Empty");
+//             }
+//         }
+//     });
+// }
 
 //-------------------## Directions
 
@@ -588,6 +743,7 @@ module.exports = {
     CreateCoCircels,
     CreateCoCircelsDB,
     GetCoCircelsDataTest,
+    OptimizeCoCircelsDB,
 };
 
 

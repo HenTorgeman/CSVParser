@@ -23,6 +23,10 @@ const CoCircelSchema = new mongoose.Schema({
         enum: ['X', 'Y', 'Z','-X','-Y','-Z'],
         default: 'X'
     },
+    RepreCount:{
+        type:Number,
+        default:0
+    },
 
 
 });

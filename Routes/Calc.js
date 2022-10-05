@@ -8,4 +8,7 @@ router.get("/CreateDirections", Calc.CreateDirections);
 router.get("/CreateCoCircels", Calc.CreateCoCircels);
 router.get("/CreateCoCircelsDB", Calc.CreateCoCircelsDB);
 router.get("/GetCoCircelsDataTest", Calc.GetCoCircelsDataTest);
+router.get("/OptimizeCoCircelsDB", Calc.OptimizeCoCircelsDB);
+
+
 module.exports = router;
