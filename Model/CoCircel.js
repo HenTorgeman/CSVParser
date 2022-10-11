@@ -5,6 +5,9 @@ const CoCircelSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    PN:{
+        type:String
+    },
     circels: {
         type: [Object]
     },

@@ -9,6 +9,12 @@ const circelSchema = Base.discriminator("Circel",
             type: Number,
             default: 0,
         },
+        PN:{
+            type:String
+        },
+        key:{
+            type:String
+        },
         pointsA: {
             type: Object
         },
