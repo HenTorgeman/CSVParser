@@ -4,7 +4,8 @@ const CoCircel = require("../Model/CoCircel");
 const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
-const filePath = "C:\\Users\\hen-t\\Desktop\\AutoCosting_Script_Files\\ScriptReading\\01-ScriptInput.csv";
+//const filePath = "C:\\Users\\hen-t\\Desktop\\AutoCosting_Script_Files\\ScriptReading\\01-ScriptInput.csv";
+const filePath = '/Users/hentorgeman/Desktop/ScriptReading/01-ScriptInput.csv'
 
 const colPartNumber=0;
 const colPath=1; 
@@ -62,23 +63,8 @@ res.status(200).send('ok');
 
 
 async function saveAll(docArray){
-    // var total = docArray.length
-    // if(total>0){
-    // var doc = docArray.pop();
   console.log('### 22 saveAll');
     return Promise.all(docArray.map((doc) => doc.save()));
-
-//   await doc.save(function(err, saved){
-//       if (err) throw err;//handle error
-//       console.log("Obj Saved in DB");  
-//       if (--total) saveAll(docArray);
-//       else{
-//       } // all saved here
-//     });
-//}
-// else{
-//     console.log("XX: arr is not saved becase its Empty.");
-// }
 }
 
 const ClearDB = async (req, res, next) => {
