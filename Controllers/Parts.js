@@ -4,48 +4,17 @@ const CoCircel = require("../Model/CoCircel");
 const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
-const filePath = '/Users/hentorgeman/Desktop/ScriptReading/01-ScriptInput.csv'
-
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/01-ScriptInput.csv'
 const colPartNumber=0;
-const colPath=1; 
-const colMsOrigin=4; 
-const colMsToPrint=5; 
-const parts=[];
-
-//---------------------------------------------------
-// PROMISS IMPLIMITETION
-//---------------------------------------------------
-
-
-// const Start = async (req, res, next) => {
-//     var data =fs.readFileSync(filePath, "utf8").split("\r\n");
-//     var table=data;
-//     let partsCount=table.length-1;
-
-// for(el of table){        
-//     console.log("## 00 Start looping the parts");
-//         const row=el.split(",");
-//         const pn=row[colPartNumber];
-//         if(pn.toString().trim()==='Part' || pn.toString().trim()===''){
-//         }
-//         else{
-//             const path=row[colPath];
-//             var originMs=row[colMsOrigin];
-//             const partData = fs.readFileSync(path, "utf8").split("\r\n");                    
-//             parts.push(pn);
-//             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
-//             saveAll(circlesArr);
-//             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
-//             saveAll(coCirclesArr);
-//         }
-//     }
-//     res.status(200).send('ok');
-// }
+const colPath=1;
+const colMsOrigin=4;
+const colMsToPrint=5;
 
 const Start = async (req, res, next) => {
+
+    console.log("## Reading file....");
     let data =fs.readFileSync(filePath, "utf8").split("\r\n");
     let table=data;
-    let partsCount=table.length-1;
     let index=0;
     const parts=[];
     const partsName=[];
@@ -54,12 +23,13 @@ const Start = async (req, res, next) => {
         let row=el.split(",");
         let pn=row[colPartNumber];
         if(pn.toString().trim()==='Part' || pn.toString().trim()===''){
+            // Its Title
         }
         else{
-            const path=row[colPath];
-            var originMs=row[colMsOrigin];
-           
-            
+            // Its Line
+            console.log("## Calculate data for.. "+ pn);
+            let path=row[colPath];
+            let originMs=row[colMsOrigin];
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             let fileArr=partData[0].split("\n");
             partsName.push(pn);
@@ -67,25 +37,27 @@ const Start = async (req, res, next) => {
             saveAll(circlesArr);
             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
             saveAll(coCirclesArr);
-
+            const directionArr = await CalcController.GetMSPart(coCirclesArr,pn);
+            
             var part = Part({
                 index: index,
                 PN: pn,
                 FilePath: path,
                 CoCircels: coCirclesArr,
+                Directions:directionArr,
+                MS:directionArr.length,
                 OriginalMS:originMs,
             });
-
             parts.push(part);
             index++;
         }
     }
     saveAll(parts);
+    console.log("## Done! All parts created!");
     res.status(200).send('ok');
 }
 
 async function saveAll(docArray){
-  console.log('### 22 saveAll');
     return Promise.all(docArray.map((doc) => doc.save()));
 }
 

@@ -26,8 +26,8 @@ const PartSchema = new mongoose.Schema({
         type: Number,
         default: 2,
     },
-    directions:{
-        type: [Object]
+    Directions:{
+        type: [String]
     }
 });
 module.exports = mongoose.model("Part", PartSchema);

@@ -27,11 +27,9 @@ const GetCirclesArr=(tableFile,pn)=>
                     circleArr.push(response);
                 }
                 else{
-                    console.log("## 01: Found key exsit in dictionary");
                 }
             }
     }
-    console.log("## 01: Dictionary. len : "+ dictionary.length);
     resolve(circleArr);
 });
 
@@ -46,7 +44,6 @@ new Promise(async resolve =>{
             completeCirclesArr.push(coCirc);
         }
     }
-    console.log("## 02: completeCirclesArr len: " + completeCirclesArr.length);
     resolve(completeCirclesArr);
 });
 
@@ -187,8 +184,8 @@ const CreateCompleteCircel_AxisValues=(circelObj)=>
     
     if(docs.length==0) resolve(null);
     else{    
-    var asix = circelObj.AxisB;
-        var y = circelObj.pointsA.y;
+            var asix = circelObj.AxisB;
+            var y = circelObj.pointsA.y;
             var x = circelObj.pointsA.x;
 
             var z = circelObj.pointsA.z;
@@ -244,6 +241,8 @@ const CreateCompleteCircel_AxisValues=(circelObj)=>
                         circels: newArr,
                         AxisB: circelObj.AxisB,
                         AxisC: circelObj.AxisC,
+                        GenAxisB:circelObj.GenAxisB,
+                        GenAxisC:circelObj.GenAxisC,
                         radius: circelObj.radius,
                         RepreCount: newArr.length
                     });
@@ -252,28 +251,46 @@ const CreateCompleteCircel_AxisValues=(circelObj)=>
                         passCircelArr.push(element._id.toString());
                     });
 
-                    // console.log("coCircelArr Done");
-                    // callback(coCirc);
                     resolve(coCirc);
                 }
                 else {
-                    // console.log("Empty");
-                    //callback(null);
+                 
                      resolve(null);
                 }
             }
             else {
-                //callback(null);
-                // console.log("Already Exist");
                 resolve(null);
             }
         }
+});
+
+
+//(03-1)
+const GetMSPart=(coCirclesArr,pn)=>
+new Promise(async resolve =>{
+    let direction=[];
+    for(c of coCirclesArr){
+        var key=GetUniqKeyForDirection(c);
+        let valExist = direction.some(obj => obj==key);
+     if (valExist==false){
+        direction.push(key);       
+    }
+}
+resolve(direction);
+
 });
 
 //(Heplers)
 function GetUniqKeyForCircle(circleObj){
     var str='r'+circleObj.radius+'x'+circleObj.pointsA.x+'y'+circleObj.pointsA.y+'z'+circleObj.pointsA.z+'x'+circleObj.pointsB.x+'y'+circleObj.pointsB.y+'z'+circleObj.pointsB.z+'x'+circleObj.pointsC.x+'y'+circleObj.pointsC.y+'z'+circleObj.pointsC.z;
     return str;
+
+}
+
+function GetUniqKeyForDirection(coCirclesObj){
+     return coCirclesObj.GenAxisB +"-"+coCirclesObj.GenAxisC;
+
+
 
 }
 function GetCircelAxisB(circel) {
@@ -396,5 +413,6 @@ const ClearDB = async (req, res, next) => {
 module.exports = {
     GetCirclesArr,
     GetCoCirclesArr,
+    GetMSPart,
     ClearDB,
 };

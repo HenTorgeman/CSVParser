@@ -30,6 +30,16 @@ const CoCircelSchema = new mongoose.Schema({
         type:Number,
         default:0
     },
+    GenAxisB: {
+        type: String,
+        enum: ['X', 'Y', 'Z'],
+        default: 'X'
+    },
+    GenAxisC: {
+        type: String,
+        enum: ['X', 'Y', 'Z'],
+        default: 'X'
+    },
 
 
 });
