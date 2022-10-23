@@ -12,35 +12,50 @@ const colMsOrigin=4;
 const colMsToPrint=5; 
 const parts=[];
 
-
-
 //---------------------------------------------------
 // PROMISS IMPLIMITETION
 //---------------------------------------------------
 
 
-const Start = async (req, res, next) => {
-    var data =fs.readFileSync(filePath, "utf8").split("\r\n");
-    var table=data;
-    let partsCount=table.length-1;
+// const Start = async (req, res, next) => {
+//     var data =fs.readFileSync(filePath, "utf8").split("\r\n");
+//     var table=data;
+//     let partsCount=table.length-1;
 
-for(el of table){        
-    console.log("## 00 Start looping the parts");
-        const row=el.split(",");
-        const pn=row[colPartNumber];
-        if(pn.toString().trim()==='Part' || pn.toString().trim()===''){
-        }
-        else{
-            const path=row[colPath];
-            var originMs=row[colMsOrigin];
-            const partData = fs.readFileSync(path, "utf8").split("\r\n");                    
+// for(el of table){        
+//     console.log("## 00 Start looping the parts");
+//         const row=el.split(",");
+//         const pn=row[colPartNumber];
+//         if(pn.toString().trim()==='Part' || pn.toString().trim()===''){
+//         }
+//         else{
+//             const path=row[colPath];
+//             var originMs=row[colMsOrigin];
+//             const partData = fs.readFileSync(path, "utf8").split("\r\n");                    
+//             parts.push(pn);
+//             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
+//             saveAll(circlesArr);
+//             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
+//             saveAll(coCirclesArr);
+//         }
+//     }
+//     res.status(200).send('ok');
+// }
+
+const Start = async (req, res, next) => {
+  
+
+            const path="Files/DEMO.csv";
+            let originMs=5;
+            let pn='DEMO';
+            
+            let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
+            let fileArr=partData[0].split("\n");
             parts.push(pn);
-            const circlesArr = await CalcController.GetCirclesArr(partData, pn);
+            const circlesArr = await CalcController.GetCirclesArr(fileArr, pn);
             saveAll(circlesArr);
             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
             saveAll(coCirclesArr);
-        }
-    }
     res.status(200).send('ok');
 }
 

@@ -1,4 +1,3 @@
-
 const Circel = require("../Model/Circel");
 const Point = require("../Model/Point");
 const fileUtilit = require("../Files");
@@ -10,6 +9,7 @@ const GetCirclesArr=(tableFile,pn)=>
     new Promise(async resolve =>{
     var circleArr=[];
     var dictionary =[];
+
     for(el of tableFile){        
         var row = el.split(" ");
 
@@ -37,15 +37,15 @@ const GetCirclesArr=(tableFile,pn)=>
 
 //(02)
 const GetCoCirclesArr=(circleArr,pn)=>
-new Promise(resolve =>{
+new Promise(async resolve =>{
     const completeCirclesArr=[];
-    circleArr.map(async (circle)=>{
-       const coCirc= await CreateCompleteCircel_AxisValues(circle);
+    for(c of circleArr){
+       const coCirc=await CreateCompleteCircel_AxisValues(c);
        if(coCirc != null){
             coCirc.PN = pn;
             completeCirclesArr.push(coCirc);
         }
-    })    
+    }
     console.log("## 02: completeCirclesArr len: " + completeCirclesArr.length);
     resolve(completeCirclesArr);
 });
@@ -180,18 +180,107 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
 });
 
 //(02-1)
-async function CreateCompleteCircel_AxisValues(circelObj) {
+// async function CreateCompleteCircel_AxisValues(circelObj) {
 
-    const docs = await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
-    // Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }, function (err, docs) {
-    //     if (err) {
-    //         console.log("##------");
-    //         console.log(err);
-    //         callback(err);
-    //     }
-        // else {
-            var asix = circelObj.AxisB;
-            var y = circelObj.pointsA.y;
+//     const docs = await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
+//     // Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }, function (err, docs) {
+//     //     if (err) {
+//     //         console.log("##------");
+//     //         console.log(err);
+//     //         callback(err);
+//     //     }
+//         // else {
+//             var asix = circelObj.AxisB;
+//             var y = circelObj.pointsA.y;
+//             var x = circelObj.pointsA.x;
+
+//             var z = circelObj.pointsA.z;
+//             var id = circelObj._id.toString();
+//             var radius = circelObj.radius;
+//             var newArr = [];
+
+//             if (!passCircelArr.includes(id)) {
+
+//                 if (asix === "X" || asix === "-X") {
+//                     newArr = docs.filter(function (e) {
+//                         return e.pointsA.y === y && e.pointsA.z === z;
+//                     });
+//                     if (newArr.length > 3) {
+//                         var newArrRadius = newArr.filter(function (e) {
+//                             return e.radius == radius;
+//                         });
+//                         if (newArrRadius.length > 1) {
+//                             newArr = newArrRadius;
+//                         }
+//                     }
+//                 }
+//                 if (asix === "Y" || asix === "-Y") {
+//                     newArr = docs.filter(function (e) {
+//                         return e.pointsA.x === x && e.pointsA.z === z;
+//                     });
+//                     if (newArr.length > 3) {
+//                         var newArrRadius = newArr.filter(function (e) {
+//                             return e.radius == radius;
+//                         });
+//                         if (newArrRadius.length > 1) {
+//                             newArr = newArrRadius;
+//                         }
+//                     }
+//                 }
+//                 if (asix === "Z" || asix === "-Z") {
+//                     newArr = docs.filter(function (e) {
+//                         return e.pointsA.y === y && e.pointsA.x === x;
+//                     });
+//                     if (newArr.length > 3) {
+//                         var newArrRadius = newArr.filter(function (e) {
+//                             return e.radius == radius;
+//                         });
+//                         if (newArrRadius.length > 1) {
+//                             newArr = newArrRadius;
+//                         }
+//                     }
+//                 }
+
+//                 if (newArr.length > 0) {
+
+//                     var coCirc = new CoCircel({
+//                         circels: newArr,
+//                         AxisB: circelObj.AxisB,
+//                         AxisC: circelObj.AxisC,
+//                         radius: circelObj.radius,
+//                         RepreCount: newArr.length
+//                     });
+
+//                     newArr.forEach(element => {
+//                         passCircelArr.push(element._id.toString());
+//                     });
+
+//                     // console.log("coCircelArr Done");
+//                     // callback(coCirc);
+//                     return coCirc;
+//                 }
+//                 else {
+//                     // console.log("Empty");
+//                     //callback(null);
+//                     return null;
+//                 }
+//             }
+//             else {
+//                 //callback(null);
+//                 // console.log("Already Exist");
+//                 return null;
+//             }
+// }
+
+const CreateCompleteCircel_AxisValues=(circelObj)=>
+    new Promise(async resolve=>{
+
+    const docs =await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
+    
+    if(docs.length==0) resolve(null);
+    else{    
+    var asix = circelObj.AxisB;
+        var y = circelObj.pointsA.y;
             var x = circelObj.pointsA.x;
 
             var z = circelObj.pointsA.z;
@@ -257,21 +346,21 @@ async function CreateCompleteCircel_AxisValues(circelObj) {
 
                     // console.log("coCircelArr Done");
                     // callback(coCirc);
-                    return coCirc;
+                    resolve(coCirc);
                 }
                 else {
                     // console.log("Empty");
                     //callback(null);
-                    return null;
+                     resolve(null);
                 }
             }
             else {
                 //callback(null);
                 // console.log("Already Exist");
-                return null;
+                resolve(null);
             }
-}
-
+        }
+});
 
 //(Heplers)
 function GetUniqKeyForCircle(circleObj){
