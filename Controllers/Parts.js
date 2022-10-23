@@ -43,14 +43,22 @@ const parts=[];
 // }
 
 const Start = async (req, res, next) => {
-  
-
-            const parts=[];
-            const partsName=[];
-            const path="Files/DEMO.csv";
-            let originMs=5;
-            let index=0;
-            let pn='DEMO';
+    let data =fs.readFileSync(filePath, "utf8").split("\r\n");
+    let table=data;
+    let partsCount=table.length-1;
+    let index=0;
+    const parts=[];
+    const partsName=[];
+    
+    for(el of table){      
+        let row=el.split(",");
+        let pn=row[colPartNumber];
+        if(pn.toString().trim()==='Part' || pn.toString().trim()===''){
+        }
+        else{
+            const path=row[colPath];
+            var originMs=row[colMsOrigin];
+           
             
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             let fileArr=partData[0].split("\n");
@@ -68,8 +76,11 @@ const Start = async (req, res, next) => {
                 OriginalMS:originMs,
             });
 
-        parts.push(part);
-        saveAll(parts);
+            parts.push(part);
+            index++;
+        }
+    }
+    saveAll(parts);
     res.status(200).send('ok');
 }
 
