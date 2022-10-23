@@ -45,51 +45,33 @@ const parts=[];
 const Start = async (req, res, next) => {
   
 
+            const parts=[];
+            const partsName=[];
             const path="Files/DEMO.csv";
             let originMs=5;
+            let index=0;
             let pn='DEMO';
             
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             let fileArr=partData[0].split("\n");
-            parts.push(pn);
+            partsName.push(pn);
             const circlesArr = await CalcController.GetCirclesArr(fileArr, pn);
             saveAll(circlesArr);
             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
             saveAll(coCirclesArr);
+
+            var part = Part({
+                index: index,
+                PN: pn,
+                FilePath: path,
+                CoCircels: coCirclesArr,
+                OriginalMS:originMs,
+            });
+
+        parts.push(part);
+        saveAll(parts);
     res.status(200).send('ok');
 }
-
-
-
-// const createPart = async () => {
-//     for (email of emails) {
-//       const emailInfo = await send(email,'shit');
-//       console.log(`Mail sent to ${emailInfo}`);
-//     }
-//     console.log('All emails were sent');
-// };
-
-//---------------------------------------------------
-
-
-
-
-const GetCompleteCircles = async (req, res, next) => {
-    let rowNumber=parts.length;
-
-    for(let i=0;i<rowNumber;i++){
-        console.log("## Part "+ i);
-        var pn=parts[i];
-        var coCirclesArr=[]; 
-        var circleArr=await Circel.find({'PN':pn}).exec();
-        coCirclesArr=CalcController.GetCoCirclesArr(circleArr,pn);
-        await saveAll(coCirclesArr);
-    }
-
-res.status(200).send('ok');
-
-}
-
 
 async function saveAll(docArray){
   console.log('### 22 saveAll');
@@ -108,5 +90,4 @@ const ClearDB = async (req, res, next) => {
 module.exports = {
     Start,
     ClearDB,
-    GetCompleteCircles,
 };
