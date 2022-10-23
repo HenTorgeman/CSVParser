@@ -288,7 +288,7 @@ function GetUniqKeyForCircle(circleObj){
 }
 
 function GetUniqKeyForDirection(coCirclesObj){
-     return coCirclesObj.GenAxisB +"-"+coCirclesObj.GenAxisC;
+     return coCirclesObj.GenAxisB +"-"+coCirclesObj.AxisC;
 
 
 

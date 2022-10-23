@@ -29,16 +29,17 @@ const Start = async (req, res, next) => {
             // Its Line
             console.log("## Calculate data for.. "+ pn);
             let path=row[colPath];
+            console.log(path);
             let originMs=row[colMsOrigin];
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
-            let fileArr=partData[0].split("\n");
+            //let fileArr=partData[0].split("\n");
             partsName.push(pn);
-            const circlesArr = await CalcController.GetCirclesArr(fileArr, pn);
+            const circlesArr = await CalcController.GetCirclesArr(partData, pn);
             saveAll(circlesArr);
             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
             saveAll(coCirclesArr);
             const directionArr = await CalcController.GetMSPart(coCirclesArr,pn);
-            
+
             var part = Part({
                 index: index,
                 PN: pn,
