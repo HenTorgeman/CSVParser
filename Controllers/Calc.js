@@ -6,12 +6,14 @@ const CoCircel = require("../Model/CoCircel");
 var passCircelArr = [];
 
 //(01)
-async function GetCirclesArr(tableFile,pn){
+const GetCirclesArr=(tableFile,pn)=>
+    new Promise(async resolve =>{
     var circleArr=[];
     var dictionary =[];
-    for (let i = 16; i < tableFile.length; i++) {
-        var row = tableFile[i].split(" ");
-        CreateNewCircel(row, tableFile, pn, (response) => {
+    for(el of tableFile){        
+        var row = el.split(" ");
+
+        const response= await CreateNewCircel(row, tableFile, pn);
             if (response != null) {
                    var key=GetUniqKeyForCircle(response);
                    let valExist = dictionary.some(obj => obj.key === key);
@@ -28,14 +30,14 @@ async function GetCirclesArr(tableFile,pn){
                     console.log("## 01: Found key exsit in dictionary");
                 }
             }
-        });
     }
     console.log("## 01: Dictionary. len : "+ dictionary.length);
-    return circleArr;
-}
+    resolve(circleArr);
+});
 
 //(02)
-async function GetCoCirclesArr(circleArr,pn){
+const GetCoCirclesArr=(circleArr,pn)=>
+new Promise(resolve =>{
     const completeCirclesArr=[];
     circleArr.map(async (circle)=>{
        const coCirc= await CreateCompleteCircel_AxisValues(circle);
@@ -43,20 +45,15 @@ async function GetCoCirclesArr(circleArr,pn){
             coCirc.PN = pn;
             completeCirclesArr.push(coCirc);
         }
-        // CreateCompleteCircel_AxisValues(circle, (coCirc) => {
-        //     if(coCirc != null){
-        //         coCirc.PN = pn;
-        //         completeCirclesArr.push(coCirc);
-        //     }
-        // });
     })    
     console.log("## 02: completeCirclesArr len: " + completeCirclesArr.length);
-    return completeCirclesArr;
-}
+    resolve(completeCirclesArr);
+});
 
 //(01-1)
-function CreateNewCircel(rowArr, fileArr,pn, callback) {
-    try {
+const CreateNewCircel=(rowArr, fileArr,pn)=>
+    new Promise(resolve=>{
+    
         if (rowArr[2] === "CIRCLE") {
             var indexText = rowArr[0];
             var index = indexText.toString().replace(/[^\w\s]/gi, '');
@@ -167,7 +164,7 @@ function CreateNewCircel(rowArr, fileArr,pn, callback) {
                                                 
 
                                             }
-                                            callback(circel);
+                                            resolve(circel);
 
                                         }
                                     });
@@ -179,11 +176,8 @@ function CreateNewCircel(rowArr, fileArr,pn, callback) {
                 }
             });
         }
-        callback(null);
-    } catch (err) {
-        console.log(err);
-    }
-}
+        resolve(null)
+});
 
 //(02-1)
 async function CreateCompleteCircel_AxisValues(circelObj) {
@@ -276,7 +270,7 @@ async function CreateCompleteCircel_AxisValues(circelObj) {
                 // console.log("Already Exist");
                 return null;
             }
-        }
+}
 
 
 //(Heplers)

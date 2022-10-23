@@ -4,7 +4,6 @@ const CoCircel = require("../Model/CoCircel");
 const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
-//const filePath = "C:\\Users\\hen-t\\Desktop\\AutoCosting_Script_Files\\ScriptReading\\01-ScriptInput.csv";
 const filePath = '/Users/hentorgeman/Desktop/ScriptReading/01-ScriptInput.csv'
 
 const colPartNumber=0;
@@ -14,36 +13,51 @@ const colMsToPrint=5;
 const parts=[];
 
 
+
+//---------------------------------------------------
+// PROMISS IMPLIMITETION
+//---------------------------------------------------
+
+
 const Start = async (req, res, next) => {
     var data =fs.readFileSync(filePath, "utf8").split("\r\n");
     var table=data;
     let partsCount=table.length-1;
 
-    table.map(async (el)=>{
-        console.log("## 00 Start looping the parts");
+for(el of table){        
+    console.log("## 00 Start looping the parts");
         const row=el.split(",");
         const pn=row[colPartNumber];
         if(pn.toString().trim()==='Part' || pn.toString().trim()===''){
-            console.log("Title");
         }
         else{
             const path=row[colPath];
-            // var originMs=row[colMsOrigin];
-            const partData = fs.readFileSync(path, "utf8").split("\r\n");        
-            // var coCirclesArr=[];
-            
+            var originMs=row[colMsOrigin];
+            const partData = fs.readFileSync(path, "utf8").split("\r\n");                    
             parts.push(pn);
             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
-           await saveAll(circlesArr);
+            saveAll(circlesArr);
             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
-            await saveAll(coCirclesArr);
+            saveAll(coCirclesArr);
         }
-
-    });
+    }
     res.status(200).send('ok');
-
-
 }
+
+
+
+// const createPart = async () => {
+//     for (email of emails) {
+//       const emailInfo = await send(email,'shit');
+//       console.log(`Mail sent to ${emailInfo}`);
+//     }
+//     console.log('All emails were sent');
+// };
+
+//---------------------------------------------------
+
+
+
 
 const GetCompleteCircles = async (req, res, next) => {
     let rowNumber=parts.length;
