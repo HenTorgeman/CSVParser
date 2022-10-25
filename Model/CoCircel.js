@@ -18,12 +18,12 @@ const CoCircelSchema = new mongoose.Schema({
     },
     AxisB: {
         type: String,
-        enum: ['X', 'Y', 'Z','-X','-Y','-Z'],
+        enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
         default: 'X'
     },
     AxisC: {
         type: String,
-        enum: ['X', 'Y', 'Z','-X','-Y','-Z'],
+        enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
         default: 'X'
     },
     RepreCount:{
@@ -32,12 +32,12 @@ const CoCircelSchema = new mongoose.Schema({
     },
     GenAxisB: {
         type: String,
-        enum: ['X', 'Y', 'Z'],
+        enum: ['X', 'Y', 'Z','D'],
         default: 'X'
     },
     GenAxisC: {
         type: String,
-        enum: ['X', 'Y', 'Z'],
+        enum: ['X', 'Y', 'Z','D'],
         default: 'X'
     },
 

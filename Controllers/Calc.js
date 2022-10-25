@@ -234,8 +234,28 @@ const CreateCompleteCircel_AxisValues=(circelObj)=>
                         }
                     }
                 }
+                if (asix === "D") {
+                    newArr = docs.filter(function (e) {
+                        return e.radius==radius;
+                    });
+                    if (newArr.length > 3) {
+                        var newArrRadius = newArr.filter(function (e) {
+                            return (e.pointsA.y === y && e.pointsA.x === x)|| 
+                            (e.pointsA.y === y && e.pointsA.z === z) ||
+                            (e.pointsA.x === x && e.pointsA.z === z);
+                        });
+                        if (newArrRadius.length > 1) {
+                            newArr = newArrRadius;
+                        }
+                    }
+                }
 
                 if (newArr.length > 0) {
+
+                    var type='';
+                    if(newArr.length==1) type='RADIUS';
+                    if(newArr.length==2) type='HOLE';
+                    if(newArr.length==3) type='PIN';
 
                     var coCirc = new CoCircel({
                         circels: newArr,
@@ -244,7 +264,8 @@ const CreateCompleteCircel_AxisValues=(circelObj)=>
                         GenAxisB:circelObj.GenAxisB,
                         GenAxisC:circelObj.GenAxisC,
                         radius: circelObj.radius,
-                        RepreCount: newArr.length
+                        RepreCount: newArr.length,
+                        type:type
                     });
 
                     newArr.forEach(element => {
@@ -326,6 +347,10 @@ function GetCircelAxisB(circel) {
             }
         }
     }
+    if(axis==""){
+        console.log("## Axis is D")
+        axis='D';
+    }
     return axis;
 
 }
@@ -356,13 +381,16 @@ function GetCircelAxisC(circel) {
                     else {
                         if (circel.pointsC.z == -1) {
                             axis = "-Z";
-
                         }
 
                     }
                 }
             }
         }
+    }
+    if(axis==""){
+        console.log("## Axis is D")
+        axis='D';
     }
     return axis;
 
@@ -382,6 +410,11 @@ function GetGenCircelAxisB(circel) {
             }
         }
     }
+
+    if(axis==""){
+        console.log("## Axis is D")
+        axis='D';
+    }
     return axis;
 
 }
@@ -399,6 +432,10 @@ function GetGenCircelAxisC(circel) {
                 axis = "Z";
             }
         }
+    }
+    if(axis==""){
+        console.log("## Axis is D")
+        axis='D';
     }
     return axis;
 
