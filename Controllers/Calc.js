@@ -38,7 +38,7 @@ const GetCoCirclesArr=(circleArr,pn)=>
 new Promise(async resolve =>{
     const completeCirclesArr=[];
     for(c of circleArr){
-       const coCirc=await CreateCompleteCircel_AxisValues(c);
+       const coCirc=await CreateCompleteCircel_AxisValues(c,pn);
        if(coCirc != null){
             coCirc.PN = pn;
             completeCirclesArr.push(coCirc);
@@ -46,6 +46,26 @@ new Promise(async resolve =>{
     }
     resolve(completeCirclesArr);
 });
+
+// //(03-1)
+// const Optimize_CBors=(coCirclesArr,pn)=>
+// new Promise(async resolve =>{
+//     const completeCirclesArr=[];
+//     const coCirclesToRemove=[];
+
+//     for(c of coCirclesArr){
+//        const coCircle = await FindCBors(c);
+//        if(coCircle != null){
+//         coCirclesToRemove.push(coCircle);
+//         c.circels.concat(coCircle.circels);
+//         completeCirclesArr.push(c);
+//         }
+//     }
+
+//     removeMany(coCirclesToRemove);
+//     resolve(completeCirclesArr);
+// });
+
 
 //(01-1)
 const CreateNewCircel=(rowArr, fileArr,pn)=>
@@ -177,10 +197,11 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
 });
 
 //(02-1)
-const CreateCompleteCircel_AxisValues=(circelObj)=>
+const CreateCompleteCircel_AxisValues=(circelObj,pn)=>
     new Promise(async resolve=>{
 
-    const docs =await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
+    // const docs =await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
+    const docs =await Circel.find({ PN:pn,GenAxisB: circelObj.GenAxisB }).exec();
     
     if(docs.length==0) resolve(null);
     else{    
@@ -199,63 +220,73 @@ const CreateCompleteCircel_AxisValues=(circelObj)=>
                     newArr = docs.filter(function (e) {
                         return e.pointsA.y === y && e.pointsA.z === z;
                     });
-                    if (newArr.length > 3) {
-                        var newArrRadius = newArr.filter(function (e) {
-                            return e.radius == radius;
-                        });
-                        if (newArrRadius.length > 1) {
-                            newArr = newArrRadius;
-                        }
-                    }
+                    // if (newArr.length > 3) {
+                    //     var newArrRadius = newArr.filter(function (e) {
+                    //         return e.radius == radius;
+                    //     });
+                    //     if (newArrRadius.length > 1) {
+                    //         newArr = newArrRadius;
+                    //     }
+                    // }
                 }
                 if (asix === "Y" || asix === "-Y") {
                     newArr = docs.filter(function (e) {
                         return e.pointsA.x === x && e.pointsA.z === z;
                     });
-                    if (newArr.length > 3) {
-                        var newArrRadius = newArr.filter(function (e) {
-                            return e.radius == radius;
-                        });
-                        if (newArrRadius.length > 1) {
-                            newArr = newArrRadius;
-                        }
-                    }
+                    // if (newArr.length > 3) {
+                    //     var newArrRadius = newArr.filter(function (e) {
+                    //         return e.radius == radius;
+                    //     });
+                    //     if (newArrRadius.length > 1) {
+                    //         newArr = newArrRadius;
+                    //     }
+                    // }
                 }
                 if (asix === "Z" || asix === "-Z") {
                     newArr = docs.filter(function (e) {
                         return e.pointsA.y === y && e.pointsA.x === x;
                     });
-                    if (newArr.length > 3) {
-                        var newArrRadius = newArr.filter(function (e) {
-                            return e.radius == radius;
-                        });
-                        if (newArrRadius.length > 1) {
-                            newArr = newArrRadius;
-                        }
-                    }
+                    // if (newArr.length > 3) {
+                    //     var newArrRadius = newArr.filter(function (e) {
+                    //         return e.radius == radius;
+                    //     });
+                    //     if (newArrRadius.length > 1) {
+                    //         newArr = newArrRadius;
+                    //     }
+                    // }
                 }
                 if (asix === "D") {
                     newArr = docs.filter(function (e) {
                         return e.radius==radius;
                     });
-                    if (newArr.length > 3) {
-                        var newArrRadius = newArr.filter(function (e) {
-                            return (e.pointsA.y === y && e.pointsA.x === x)|| 
-                            (e.pointsA.y === y && e.pointsA.z === z) ||
-                            (e.pointsA.x === x && e.pointsA.z === z);
-                        });
-                        if (newArrRadius.length > 1) {
-                            newArr = newArrRadius;
-                        }
-                    }
+                    // if (newArr.length > 3) {
+                    //     var newArrRadius = newArr.filter(function (e) {
+                    //         return (e.pointsA.y === y && e.pointsA.x === x)|| 
+                    //         (e.pointsA.y === y && e.pointsA.z === z) ||
+                    //         (e.pointsA.x === x && e.pointsA.z === z);
+                    //     });
+                    //     if (newArrRadius.length > 1) {
+                    //         newArr = newArrRadius;
+                    //     }
+                    // }
                 }
 
                 if (newArr.length > 0) {
 
                     var type='';
-                    if(newArr.length==1) type='RADIUS';
-                    if(newArr.length==2) type='HOLE';
+                    if(newArr.length==2){ 
+                    
+                        if(newArr[0].GenAxisC!=newArr[1].GenAxisC){
+                            type='RADIUS'
+                        }
+                        else{
+                            type='HOLE'
+
+                        }
+                    }
                     if(newArr.length==3) type='PIN';
+                    if(newArr.length==4) type='CBOR';
+                    if(type=='') type='OTHER';
 
                     var coCirc = new CoCircel({
                         circels: newArr,
@@ -440,7 +471,9 @@ function GetGenCircelAxisC(circel) {
     return axis;
 
 }
-
+async function removeMany(docArray){
+    return Promise.all(docArray.map((doc) => doc.deleteMany()));
+}
 //-------------------## DB
 const ClearDB = async (req, res, next) => {
     await Circel.deleteMany({});

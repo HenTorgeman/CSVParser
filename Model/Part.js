@@ -28,6 +28,21 @@ const PartSchema = new mongoose.Schema({
     },
     Directions:{
         type: [String]
+    },
+    RadiusCount:{
+        type:Number
+    },
+    PinCount:{
+        type:Number
+    },
+    HolesCount:{
+        type:Number
+    },
+    OtherCount:{
+        type:Number
+    },
+    CBorCount:{
+        type:Number
     }
 });
 module.exports = mongoose.model("Part", PartSchema);

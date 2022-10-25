@@ -39,6 +39,25 @@ const Start = async (req, res, next) => {
             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
             saveAll(coCirclesArr);
             const directionArr = await CalcController.GetMSPart(coCirclesArr,pn);
+            let radiusCount=0;
+            let pinCount=0;
+            let holesCount=0;
+            let otherCount=0;
+            let cBorCount=0;
+
+
+            coCirclesArr.map((e)=>{
+                if(e.type=='RADIUS')
+                    radiusCount++;
+                if(e.type=='PIN')
+                    pinCount++;
+                if(e.type=='OTHER')
+                    otherCount++;
+                if(e.type=='HOLE')
+                    holesCount++;
+                if(e.type=='CBOR')
+                    cBorCount++;
+            });
 
             var part = Part({
                 index: index,
@@ -48,6 +67,11 @@ const Start = async (req, res, next) => {
                 Directions:directionArr,
                 MS:directionArr.length,
                 OriginalMS:originMs,
+                RadiusCount:radiusCount,
+                PinCount:pinCount,
+                HolesCount:holesCount,
+                OtherCount:otherCount,
+                CBorCount:cBorCount,
             });
             parts.push(part);
             index++;

@@ -13,7 +13,7 @@ const CoCircelSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['HOLE', 'BHOLE', 'PIN', 'RADIUS'],
+        enum: ['HOLE', 'BHOLE', 'PIN', 'RADIUS','OTHER','CBOR'],
         default: 'HOLE'
     },
     AxisB: {
