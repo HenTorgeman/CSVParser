@@ -273,20 +273,12 @@ const CreateCompleteCircel_AxisValues=(circelObj,pn)=>
 
                 if (newArr.length > 0) {
 
-                    var type='';
-                    if(newArr.length==2){ 
-                    
-                        if(newArr[0].GenAxisC!=newArr[1].GenAxisC){
-                            type='RADIUS'
-                        }
-                        else{
-                            type='HOLE'
+                    const type=CalcCoCircleType(newArr);
 
-                        }
-                    }
-                    if(newArr.length==3) type='PIN';
-                    if(newArr.length==4) type='CBOR';
-                    if(type=='') type='OTHER';
+
+                    
+                    
+                    
 
                     var coCirc = new CoCircel({
                         circels: newArr,
@@ -338,13 +330,10 @@ function GetUniqKeyForCircle(circleObj){
     return str;
 
 }
-
 function GetUniqKeyForDirection(coCirclesObj){
      return coCirclesObj.GenAxisB +"-"+coCirclesObj.AxisC;
-
-
-
 }
+
 function GetCircelAxisB(circel) {
     var axis = "";
     if (circel.pointsB.x == 1) {
@@ -471,6 +460,49 @@ function GetGenCircelAxisC(circel) {
     return axis;
 
 }
+
+function CalcCoCircleType(circlesArr){
+    let type="";
+    if(circlesArr.length==2){ 
+                    
+        if(circlesArr[0].GenAxisC!=circlesArr[1].GenAxisC){
+            type='RADIUS';
+        }
+        else{
+            type='HOLE';
+        }
+    }
+    if(circlesArr.length==3) type='PIN';
+    if(circlesArr.length==4) type='CBOR';
+    if(type=='') type='OTHER';
+
+    return type;
+}
+
+// function CalcCoCircleDirection(circlesArr){
+
+//     // Getting arr of circle repersents
+//     // need to return the correct direction to 
+
+//     let type="";
+//     if(circlesArr.length==2){
+//         if(circlesArr[0].GenAxisC!=circlesArr[1].GenAxisC){
+//             type='RADIUS'
+//         }
+//         else{
+//             type='HOLE'
+
+//         }
+//     }
+//     if(circlesArr.length==3) type='PIN';
+//     if(circlesArr.length==4) type='CBOR';
+//     if(type=='') type='OTHER';
+
+//     return type;
+
+// }
+
+
 async function removeMany(docArray){
     return Promise.all(docArray.map((doc) => doc.deleteMany()));
 }
