@@ -3,7 +3,7 @@ const https = require('https');
 
 const express = require("express");
 const Calc = require('./Routes/Calc');
-
+const Parts = require('./Routes/Parts');
 
 
 const app = express();
@@ -18,6 +18,8 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once("open", () => console.log("Connected to mongo"));
 app.listen(port, () => console.log(`Example app listening at http://${hostname}:${port}/`))
 app.use("/Calc", Calc);
+app.use("/Parts",Parts);
+
 
 module.exports = app;
 

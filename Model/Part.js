@@ -1,34 +1,48 @@
 const mongoose = require("mongoose");
 
 const PartSchema = new mongoose.Schema({
-    index: {
+    Index: {
         type: Number,
         default: 0,
     },
-    Circels: {
+    PN: {
+        type: String,
+    },
+    FilePath: {
+        type: String,
+    },
+    CoCircels: {
         type: [Object]
-    },
-    type: {
-        type: String,
-        enum: ['HOLE', 'BHOLE', 'PIN', 'RADIUS'],
-        default: 'X'
-    },
-    AxisC: {
-        type: String,
-        enum: ['X', 'Y', 'Z'],
-        default: 'X'
-
     },
     boundingBox:{
         type: Number,
         default: 0,
     },
-    surfaceNumber:{
+    MS:{
         type: Number,
         default: 2,
     },
-    directions:{
-        type: [Object]
+    OriginalMS:{
+        type: Number,
+        default: 2,
+    },
+    Directions:{
+        type: [String]
+    },
+    RadiusCount:{
+        type:Number
+    },
+    PinCount:{
+        type:Number
+    },
+    HolesCount:{
+        type:Number
+    },
+    OtherCount:{
+        type:Number
+    },
+    CBorCount:{
+        type:Number
     }
 });
 module.exports = mongoose.model("Part", PartSchema);
