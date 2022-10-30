@@ -330,8 +330,12 @@ function GetUniqKeyForCircle(circleObj){
     return str;
 
 }
+// function GetUniqKeyForDirection(coCirclesObj){
+//      return coCirclesObj.GenAxisB +"-"+coCirclesObj.AxisC;
+// }
+
 function GetUniqKeyForDirection(coCirclesObj){
-     return coCirclesObj.GenAxisB +"-"+coCirclesObj.AxisC;
+    return coCirclesObj.GenAxisB +"-"+coCirclesObj.GenAxisC;
 }
 
 function GetCircelAxisB(circel) {
