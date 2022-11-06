@@ -2,6 +2,7 @@ const Circel = require("../Model/Circel");
 const Point = require("../Model/Point");
 const fileUtilit = require("../Files");
 const CoCircel = require("../Model/CoCircel");
+const Direction = require("../Model/Direction");
 var passCircelArr = [];
 
 //(01)
@@ -208,8 +209,8 @@ const CreateCompleteCircel_AxisValues=(circelObj,pn)=>
             var asix = circelObj.AxisB;
             var y = circelObj.pointsA.y;
             var x = circelObj.pointsA.x;
-
             var z = circelObj.pointsA.z;
+
             var id = circelObj._id.toString();
             var radius = circelObj.radius;
             var newArr = [];
@@ -220,66 +221,28 @@ const CreateCompleteCircel_AxisValues=(circelObj,pn)=>
                     newArr = docs.filter(function (e) {
                         return e.pointsA.y === y && e.pointsA.z === z;
                     });
-                    // if (newArr.length > 3) {
-                    //     var newArrRadius = newArr.filter(function (e) {
-                    //         return e.radius == radius;
-                    //     });
-                    //     if (newArrRadius.length > 1) {
-                    //         newArr = newArrRadius;
-                    //     }
-                    // }
+                   
                 }
                 if (asix === "Y" || asix === "-Y") {
                     newArr = docs.filter(function (e) {
                         return e.pointsA.x === x && e.pointsA.z === z;
                     });
-                    // if (newArr.length > 3) {
-                    //     var newArrRadius = newArr.filter(function (e) {
-                    //         return e.radius == radius;
-                    //     });
-                    //     if (newArrRadius.length > 1) {
-                    //         newArr = newArrRadius;
-                    //     }
-                    // }
+                
                 }
                 if (asix === "Z" || asix === "-Z") {
                     newArr = docs.filter(function (e) {
                         return e.pointsA.y === y && e.pointsA.x === x;
                     });
-                    // if (newArr.length > 3) {
-                    //     var newArrRadius = newArr.filter(function (e) {
-                    //         return e.radius == radius;
-                    //     });
-                    //     if (newArrRadius.length > 1) {
-                    //         newArr = newArrRadius;
-                    //     }
-                    // }
+                   
                 }
                 if (asix === "D") {
                     newArr = docs.filter(function (e) {
                         return e.radius==radius;
                     });
-                    // if (newArr.length > 3) {
-                    //     var newArrRadius = newArr.filter(function (e) {
-                    //         return (e.pointsA.y === y && e.pointsA.x === x)|| 
-                    //         (e.pointsA.y === y && e.pointsA.z === z) ||
-                    //         (e.pointsA.x === x && e.pointsA.z === z);
-                    //     });
-                    //     if (newArrRadius.length > 1) {
-                    //         newArr = newArrRadius;
-                    //     }
-                    // }
                 }
 
                 if (newArr.length > 0) {
-
                     const type=CalcCoCircleType(newArr);
-
-
-                    
-                    
-                    
-
                     var coCirc = new CoCircel({
                         circels: newArr,
                         AxisB: circelObj.AxisB,
@@ -324,6 +287,42 @@ resolve(direction);
 
 });
 
+
+
+// ## Object Version
+
+// const GetMSPart=(coCirclesArr,pn)=>
+// new Promise(async resolve =>{
+//     let direction=[];
+//     let directionObjList=[];
+//     for(elem of coCirclesArr){
+//         let key=GetUniqKeyForDirection(elem);
+//         let valExist = direction.some(obj => obj==key);
+//      if (valExist==false){
+
+//         //## Get Plane
+//         //## Get Side
+
+//         const dir=new Direction({
+//             PN:pn,
+//             DirectionAxis:elem.AxisB,
+//             AngleAxis:elem.AxisC,
+
+//         });
+
+//         direction.push(key);   
+//         directionObjList.push(dir);
+        
+//     }
+//     else{
+
+//         //Direction.FeatNumber ++
+//     }
+// }
+// resolve(directionObjList);
+
+// });
+
 //(Heplers)
 function GetUniqKeyForCircle(circleObj){
     var str='r'+circleObj.radius+'x'+circleObj.pointsA.x+'y'+circleObj.pointsA.y+'z'+circleObj.pointsA.z+'x'+circleObj.pointsB.x+'y'+circleObj.pointsB.y+'z'+circleObj.pointsB.z+'x'+circleObj.pointsC.x+'y'+circleObj.pointsC.y+'z'+circleObj.pointsC.z;
@@ -335,7 +334,7 @@ function GetUniqKeyForCircle(circleObj){
 // }
 
 function GetUniqKeyForDirection(coCirclesObj){
-    return coCirclesObj.GenAxisB +"-"+coCirclesObj.GenAxisC;
+    return coCirclesObj.AxisB;
 }
 
 function GetCircelAxisB(circel) {
@@ -483,33 +482,6 @@ function CalcCoCircleType(circlesArr){
     return type;
 }
 
-// function CalcCoCircleDirection(circlesArr){
-
-//     // Getting arr of circle repersents
-//     // need to return the correct direction to 
-
-//     let type="";
-//     if(circlesArr.length==2){
-//         if(circlesArr[0].GenAxisC!=circlesArr[1].GenAxisC){
-//             type='RADIUS'
-//         }
-//         else{
-//             type='HOLE'
-
-//         }
-//     }
-//     if(circlesArr.length==3) type='PIN';
-//     if(circlesArr.length==4) type='CBOR';
-//     if(type=='') type='OTHER';
-
-//     return type;
-
-// }
-
-
-async function removeMany(docArray){
-    return Promise.all(docArray.map((doc) => doc.deleteMany()));
-}
 //-------------------## DB
 const ClearDB = async (req, res, next) => {
     await Circel.deleteMany({});

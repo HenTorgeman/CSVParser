@@ -4,7 +4,7 @@ const CoCircel = require("../Model/CoCircel");
 const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/02-ScriptInput.csv'
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/03-ScriptInput.csv'
 const colPartNumber=0;
 const colPath=1;
 const colMsOrigin=3;
@@ -19,6 +19,7 @@ const Start = async (req, res, next) => {
     const parts=[];
     const partsName=[];
     let mistakeRange=0;
+    const mistakeList=[];
     
     for(el of table){      
         let row=el.split(",");
@@ -40,6 +41,8 @@ const Start = async (req, res, next) => {
             const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
             saveAll(coCirclesArr);
             const directionArr = await CalcController.GetMSPart(coCirclesArr,pn);
+            // saveAll(directionArr);
+
             
             let radiusCount=0;
             let pinCount=0;
@@ -65,7 +68,9 @@ const Start = async (req, res, next) => {
             let ms=directionArr.length;
             if(ms==1) ms=2;
 
-            if(ms!=originMs) mistakeRange++;
+            if(ms!=originMs) {mistakeRange++;
+                mistakeList.push(pn);
+            }
 
             var part = Part({
                 index: index,
@@ -87,28 +92,13 @@ const Start = async (req, res, next) => {
     }
     saveAll(parts);
     console.log("## Done! All parts created!");
-    res.status(200).send('Your mistake range is : ' + mistakeRange +' out of : '+parts.length);
-}
 
-const ReduceDirections=async(req,res,next)=>{
-
-
-    // OverView all parts in db
-        // for each part, save the direction and overall Part.circles
-        //
-
-    console.log("Start Reducing....");
-    const parts = await Part.find({}).exec();
-    
-    for(p of parts){
-
-        var directions=p.directions;
-
-
+    const obj={
+        title:'Your mistake range is : ' + mistakeRange +' out of : '+parts.length,
+        list:mistakeList
     }
 
-
-
+    res.status(200).send(obj);
 }
 
 
