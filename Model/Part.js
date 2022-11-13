@@ -27,7 +27,7 @@ const PartSchema = new mongoose.Schema({
         default: 2,
     },
     Directions:{
-        type: [String]
+        type: [Object]
     },
     RadiusCount:{
         type:Number

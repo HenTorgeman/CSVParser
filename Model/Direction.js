@@ -1,28 +1,30 @@
 const mongoose = require("mongoose");
 
 const DirectionSchema = new mongoose.Schema({
-    index: {
+    PN:{
+        type:String
+    },
+    DirectionAxis: {
+        type: String
+    },
+    AngleAxis: {
+        type: String
+    },
+    Key:{
+        type:String,
+        default:""
+    },
+    Side:{
+        type:String,
+        default:""
+    },
+    PlanAxisList: {
+        type: [String]
+    },
+    NumberOfFeat: {
         type: Number,
-        default: 0,
+        default:0
     },
-    dirB: {
-        type: Object
-    },
-    dirC: {
-        type: Object
-    },
-    Circels: {
-        type: [Object]
-    },
-    AxisB: {
-        type: String,
-        enum: ['X', 'Y', 'Z'],
-        default: 'X'
-    },
-    AxisC: {
-        type: String,
-        enum: ['X', 'Y', 'Z'],
-        default: 'X'
-    },
+
 });
 module.exports = mongoose.model("Direction", DirectionSchema);
