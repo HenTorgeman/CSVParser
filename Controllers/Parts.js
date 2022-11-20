@@ -4,7 +4,7 @@ const CoCircel = require("../Model/CoCircel");
 const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/03-ScriptInput.csv'
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/05-ScriptInput.csv'
 const colPartNumber=0;
 const colPath=1;
 const colMsOrigin=3;
@@ -29,9 +29,8 @@ const Start = async (req, res, next) => {
         }
         else{
             // Its Line
-            console.log("## Calculate data for.. "+ pn);
+            console.log("## Calculate data for.. "+ pn +"....."+index+"/"+table.length);
             let path=row[colPath];
-            console.log(path);
             let originMs=row[colMsOrigin];
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             //let fileArr=partData[0].split("\n");
@@ -62,11 +61,23 @@ const Start = async (req, res, next) => {
                 if(e.type=='CBOR')
                     cBorCount++;
             });
-
-
             //If found only 1 surface that requier machining we need to add another 1 for the buttom.
+
+            let DirectionX=0;
+            let DirectionY=0;
+            let DirectionZ=0;
+
+            for(d of directionArr){
+                if(d =='X' || d =='-X') DirectionX++;
+                if(d =='Y' || d =='-Y') DirectionY++;
+                if(d =='Z' || d =='-Z') DirectionZ++;
+            }
+            if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
+                directionArr.push('Buttom');
+            }
+            //---------------------------------------------------------------------------------------
+
             let ms=directionArr.length;
-            if(ms==1) ms=2;
 
             if(ms!=originMs) {mistakeRange++;
                 mistakeList.push(pn);

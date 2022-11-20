@@ -26,23 +26,23 @@ const circelSchema = Base.discriminator("Circel",
         },
         AxisB: {
             type: String,
-            enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
-            default: 'X'
+            // enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
+            // default: 'X'
         },
         AxisC: {
             type: String,
-            enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
-            default: 'X'
+            // enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
+            // default: 'X'
         },
         GenAxisB: {
             type: String,
-            enum: ['X', 'Y', 'Z','D'],
-            default: 'X'
+            // enum: ['X', 'Y', 'Z','D'],
+            // default: 'X'
         },
         GenAxisC: {
             type: String,
-            enum: ['X', 'Y', 'Z','D'],
-            default: 'X'
+            // enum: ['X', 'Y', 'Z','D'],
+            // default: 'X'
         },
     })
 );
