@@ -38,29 +38,6 @@ const FeatSchema = new mongoose.Schema({
         type:Boolean,
         default:false,
       },
-    // AbsX:{
-
-    // },
-    // AbsY:{
-
-    // },
-    // AbsZ:{
-
-    // },
-    // Deep:{
-
-    // },
-
-    // AxisC: {
-    //     type: String,
-      
-    // },
-
-    // GenAxisC: {
-    //     type: String,
-
-    // },
-
 
 });
 module.exports = mongoose.model("Feat", FeatSchema);
