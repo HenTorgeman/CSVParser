@@ -1,9 +1,10 @@
 const Circel = require("../Model/Circel");
 const Point = require("../Model/Point");
 const fileUtilit = require("../Files");
-const CoCircel = require("../Model/CoCircel");
+const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
 const Part = require("../Model/Part");
+const { off } = require("../Model/Part");
 var passCircelArr = [];
 
 //(01)
@@ -36,11 +37,12 @@ const GetCirclesArr=(tableFile,pn)=>
 });
 
 //(02)
-const GetCoCirclesArr=(circleArr,pn)=>
+const GetFeatArr=(circleArr,pn)=>
 new Promise(async resolve =>{
     const completeCirclesArr=[];
     for(c of circleArr){
-       const coCirc=await CreateCompleteCircel_AxisValues(c,pn);
+       const coCirc=await CreateFeat(c,pn);
+
        if(coCirc != null){
             coCirc.PN = pn;
             completeCirclesArr.push(coCirc);
@@ -49,6 +51,35 @@ new Promise(async resolve =>{
     resolve(completeCirclesArr);
 });
 
+//(03)
+const GetDirectionsArr=(faetArr,pn)=>
+new Promise(async resolve =>{
+    const Directions=[];
+    const DirectionsString=["X","-X","Z","-Z","Y","-Y"];
+    let FeatList= faetArr;
+    for(s of DirectionsString){
+        let directionObj=await CreateDirectionObject(s,pn);
+        Directions.push(directionObj);
+        let filltered = FeatList.filter((item) => item.AxisB != s);
+        FeatList = filltered;
+    }
+
+    if(FeatList.length>0){
+    
+        for(f of FeatList){
+            let directionObj=await CreateDirectionObject(f.AxisB,pn);
+            Directions.push(directionObj);
+            let filltered= FeatList.filter((item) => item.AxisB != f.AxisB);
+            FeatList=filltered;
+        }
+    }
+    if(FeatList.length!=0){
+        console.log("Ettention! not calculate all features");
+    }
+   
+    const filltered= Directions.filter((item) => item.NumberOfFeat>0);
+    resolve(filltered);
+});
 
 //(01-1)
 const CreateNewCircel=(rowArr, fileArr,pn)=>
@@ -60,7 +91,7 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
             var radius = rowArr[6];
             var name = rowArr[2];
             var axisIndex = 0;
-            const pointsArr = [];
+            const Arr = [];
 
             var circel = Circel({
                 index: index,
@@ -105,8 +136,8 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
                                     y: parseFloat(y).toFixed(3),
                                     z: parseFloat(z).toFixed(3),
                                 });
-                                circel.pointsA = pointA;
-                                pointsArr.push(pointA);
+                                circel.A = pointA;
+                                Arr.push(pointA);
                             }
                             fileUtilit.GetRow(fileArr, cp2, (dataB) => {
                                 if (dataB != null) {
@@ -123,13 +154,13 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
                                             index: index,
                                             indexText: indexText,
                                             actionName: name,
-                                            x: x,
-                                            y: y,
-                                            z: z
+                                            x: parseFloat(x).toFixed(3),
+                                            y: parseFloat(y).toFixed(3),
+                                            z: parseFloat(z).toFixed(3),
                                         });
 
-                                        circel.pointsB = pointB;
-                                        pointsArr.push(pointB);
+                                        circel.B = pointB;
+                                        Arr.push(pointB);
 
 
                                     }
@@ -149,18 +180,21 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
                                                     index: index,
                                                     indexText: indexText,
                                                     actionName: name,
-                                                    x: x,
-                                                    y: y,
-                                                    z: z
+                                                    x: parseFloat(x).toFixed(3),
+                                                    y: parseFloat(y).toFixed(3),
+                                                    z: parseFloat(z).toFixed(3),
                                                 });
-                                                circel.pointsC = pointC;
-                                                pointsArr.push(pointC);
+                                                circel.C = pointC;
+                                                Arr.push(pointC);
                                                 
                                                 circel.PN=pn;
                                                 circel.AxisB = GetCircelAxisB(circel);
-                                                circel.AxisC = GetCircelAxisC(circel);
-                                                circel.GenAxisB = GetGenCircelAxisB(circel);
-                                                circel.GenAxisC = GetGenCircelAxisC(circel);
+                                                // circel.AxisC = GetCircelAxisC(circel);
+                                                circel.AbsulteAxisB = GetGenCircelAxisB(circel);
+                                                // circel.AbsulteAxisC = GetGenCircelAxisC(circel);
+                                                if(circel.AbsulteAxisB.length>3){
+                                                    circel.IsComplex=true;
+                                                }
 
                                             }
                                             resolve(circel);
@@ -179,294 +213,89 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
 });
 
 //(02-1)
-const CreateCompleteCircel_AxisValues=(circelObj,pn)=>
+const CreateFeat=(circelObj,pn)=>
     new Promise(async resolve=>{
 
     // const docs =await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
-    const docs =await Circel.find({ PN:pn,GenAxisB: circelObj.GenAxisB }).exec();
+    const docs =await Circel.find({ PN:pn,AbsulteAxisB: circelObj.AbsulteAxisB}).exec();
+    //Docs : Group of circles that is not used already, same pn, and same AbsDirection (Y,X,Z,Complex)
     
-    if(docs.length==0) resolve(null);
-    else{    
-            var asix = circelObj.AxisB;
-            var GenAxisB = circelObj.GenAxisB;
-            var y = circelObj.pointsA.y;
-            var x = circelObj.pointsA.x;
-            var z = circelObj.pointsA.z;
-
+    if(docs.length==0) {
+        // console.log("## (docs.length==0)s");
+        resolve(null);}
+    else{
+            var axis = circelObj.AxisB;
+            var y = circelObj.A.y;
+            var x = circelObj.A.x;
+            var z = circelObj.A.z;
             var id = circelObj._id.toString();
-            var radius = circelObj.radius;
-            var newArr = [];
 
+            var newArr = [];
             if (!passCircelArr.includes(id)) {
 
-                if (asix === "X" || asix === "-X") {
-                    newArr = docs.filter(function (e) {
-                        return e.pointsA.y === y && e.pointsA.z === z;
-                    });
-                   
+                if(circelObj.IsComplex==true){
+     
+                    var newArr = docs;
                 }
                 else{
-                    if (asix === "Y" || asix === "-Y") {
+                    if (circelObj.AbsulteAxisB=='X') {
                         newArr = docs.filter(function (e) {
-                            return e.pointsA.x === x && e.pointsA.z === z;
+                            return e.A.y === y && e.A.z === z;
                         });
                     
                     }
                     else{
-                        if (asix === "Z" || asix === "-Z") {
+                        if (circelObj.AbsulteAxisB=='Y') {
                             newArr = docs.filter(function (e) {
-                                return e.pointsA.y === y && e.pointsA.x === x;
+                                return e.A.x === x && e.A.z === z;
                             });
-                           
+                        
                         }
                         else{
-                            newArr = docs.filter(function (e) {
-                                return e.radius==radius;
-                            });
+                            if (circelObj.AbsulteAxisB=='Z') {
+                                newArr = docs.filter(function (e) {
+                                    return e.A.y === y && e.A.x === x;
+                                });
+                            
+                            }
+                        
                         }
                     }
                 }
-
-                if (newArr.length > 0) {
+                //Complex Feats
+                if(newArr.length>0){
                     let type=CalcCoCircleType(newArr);
-                    let DirectionsAxis=CalcCoCircleDirection(newArr);
-                    
-                    var coCirc = new CoCircel({
+                    let DirectionsAxis = CalcFeatsDirection(newArr);
+                    var coCirc = new Feat({
                         circels: newArr,
                         AxisB: DirectionsAxis,
-                        AxisC: circelObj.AxisC,
-                        GenAxisB:circelObj.GenAxisB,
-                        GenAxisC:circelObj.GenAxisC,
+                        AbsulteAxisB:circelObj.AbsulteAxisB,
+                        AbsulteAxisC:circelObj.AbsulteAxisC,
                         radius: circelObj.radius,
                         RepreCount: newArr.length,
-                        type:type
+                        type:type,
+                        IsComplex:circelObj.IsComplex
                     });
 
                     newArr.forEach(element => {
                         passCircelArr.push(element._id.toString());
                     });
-
+                    // console.log("## Feat Completed!");
+                    // console.log(coCirc);
                     resolve(coCirc);
                 }
-                else {
-                 
-                     resolve(null);
-                }
             }
-            else {
+            else{
+                // console.log("## Circ already include");
                 resolve(null);
+        
             }
         }
+   
 });
 
-
-//(03-1)
-const GetMSPart=(coCirclesArr,pn)=>
-new Promise(async resolve =>{
-    let direction=[];
-    for(c of coCirclesArr){
-        var key=GetUniqKeyForDirection(c);
-        let valExist = direction.some(obj => obj==key);
-     if (valExist==false){
-        direction.push(key);       
-    }
-}
-resolve(direction);
-
-});
-
-
-//(03-1)
-
-// const DeleteUnuseDirections=(partId)=>
-// new Promise(async resolve =>{
-
-//     //Create Directions/Feat map and check the alternative circel of coCircle.
-
-//     const DicrectionFeat = new Map();
-//     const part = await Part.find({id:partId}).exec();
-//     const X=0;
-//     const Y=0;
-//     const Z=0;
-
-//     const XpartFeats = await CoCircel.find({ PN:pn,GenAxisB:'X'}).exec();
-//     const YpartFeats = await CoCircel.find({ PN:pn,GenAxisB:'Y'}).exec();
-//     const ZpartFeats = await CoCircel.find({ PN:pn,GenAxisB:'Z'}).exec();
-
-//     for(feat of XpartFeats){
-
-//         let negative=0; let positive=0;
-
-
-//     }
-
-//     for(c of coCirclesArr){
-//         var key=GetUniqKeyForDirection(c);
-//         let valExist = direction.some(obj => obj==key);
-//      if (valExist==false){
-//         direction.push(key);       
-//     }
-// }
-// resolve(direction);
-
-// });
-
-
-//(Heplers)
-function GetUniqKeyForCircle(circleObj){
-    var str='r'+circleObj.radius+'x'+circleObj.pointsA.x+'y'+circleObj.pointsA.y+'z'+circleObj.pointsA.z+'x'+circleObj.pointsB.x+'y'+circleObj.pointsB.y+'z'+circleObj.pointsB.z+'x'+circleObj.pointsC.x+'y'+circleObj.pointsC.y+'z'+circleObj.pointsC.z;
-    return str;
-
-}
-
-function GetUniqKeyForDirection(coCirclesObj){
-    return coCirclesObj.AxisB;
-}
-
-function GetCircelAxisB(circel) {
-    var axis = "";
-    if (circel.pointsB.x == 1) {
-        axis = "X";
-    }
-    else {
-        if (circel.pointsB.x == -1) {
-            axis = "-X";
-        }
-        else {
-            if (circel.pointsB.y == 1) {
-                axis = "Y";
-            }
-            else {
-                if (circel.pointsB.y == -1) {
-                    axis = "-Y";
-                }
-                else {
-                    if (circel.pointsB.z == 1) {
-                        axis = "Z";
-                    }
-                    else {
-                        if (circel.pointsB.z == -1) {
-                            axis = "-Z";
-                        }    
-                    }
-                }
-            }
-        }
-    }
-  
-    if(axis==""){
-        var x=circel.pointsB.x.toFixed(3);
-        var y=circel.pointsB.y.toFixed(3);
-        var z=circel.pointsB.z.toFixed(3);
-
-        axis='| X '+x+' | Y '+y+' | Z '+z;
-    }
-    return axis;
-
-}
-function GetCircelAxisC(circel) {
-
-
-    var axis = "";
-    if (circel.pointsC.x == 1) {
-        axis = "X";
-    }
-    else {
-        if (circel.pointsC.x == -1) {
-            axis = "-X";
-        }
-        else {
-            if (circel.pointsC.y == 1) {
-                axis = "Y";
-            }
-            else {
-                if (circel.pointsC.y == -1) {
-                    axis = "-Y";
-
-                }
-                else {
-                    if (circel.pointsC.z == 1) {
-                        axis = "Z";
-                    }
-                    else {
-                        if (circel.pointsC.z == -1) {
-                            axis = "-Z";
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-    if(axis==""){
-        axis='D';
-    }
-    return axis;
-
-}
-function GetGenCircelAxisB(circel) {
-    var axis = "";
-    if (circel.pointsB.x == 1 || circel.pointsB.x == -1) {
-        axis = "X";
-    }
-    else {
-        if (circel.pointsB.y == 1 || circel.pointsB.y == -1) {
-            axis = "Y";
-        }
-        else {
-            if (circel.pointsB.z == 1 || circel.pointsB.z == -1) {
-                axis = "Z";
-            }
-            
-        }
-    }
-    if(axis == "") {
-        axis = "D";
-    }
-    return axis;
-
-}
-function GetGenCircelAxisC(circel) {
-    var axis = "";
-    if (circel.pointsC.x == 1 || circel.pointsC.x == -1) {
-        axis = "X";
-    }
-    else {
-        if (circel.pointsC.y == 1 || circel.pointsC.y == -1) {
-            axis = "Y";
-        }
-        else {
-            if (circel.pointsC.z == 1 || circel.pointsC.z == -1) {
-                axis = "Z";
-            }
-        }
-    }
-    if(axis=="") {
-        axis =  "D";}
-     
-    return axis;
-
-}
-
-function CalcCoCircleType(circlesArr){
-    let type="";
-    if(circlesArr.length==2){ 
-                    
-        if(circlesArr[0].GenAxisC!=circlesArr[1].GenAxisC){
-            type='RADIUS';
-        }
-        else{
-            type='HOLE';
-        }
-    }
-    if(circlesArr.length==3) type='PIN';
-    if(circlesArr.length==4) type='CBOR';
-    if(type=='') type='OTHER';
-
-    return type;
-}
-
-function CalcCoCircleDirection(circlesArr){
+//(02-2)
+function CalcFeatsDirection(circlesArr){
 
     const allMap = new Map();
     let maxVal=0;
@@ -499,15 +328,215 @@ function CalcCoCircleDirection(circlesArr){
 
 }
 
+//(02-3)
+const CreateDirectionObject=(s,pn)=>
+new Promise(async resolve=>{
+
+let absAxis='';
+if(s == 'X' || s == '-X') absAxis='X';
+if(s == 'Y' || s == '-Y') absAxis='Y';
+if(s == 'Z' || s == '-Z') absAxis='Z';
+if(absAxis == '') {
+    // console.log("Complex Direction "+pn);
+    absAxis='Complex';
+}
+
+// const docs =await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
+const featList =await Feat.find({ PN:pn,AxisB:s }).exec();
+const direction=new Direction({
+    PN:pn,
+    DirectionAxis:s,
+    Features:featList,
+    AbsAxis:absAxis,
+    NumberOfFeat:featList.length,
+});
+
+    resolve(direction);
+
+});
+
+//(03-2)
+const GetMSPart=(coCirclesArr,pn)=>
+new Promise(async resolve =>{
+    let direction=[];
+    for(c of coCirclesArr){
+        var key=GetUniqKeyForDirection(c);
+        let valExist = direction.some(obj => obj==key);
+     if (valExist==false){
+        direction.push(key);       
+    }
+}
+resolve(direction);
+
+});
+
+//(Heplers)
+function GetUniqKeyForCircle(circleObj){
+    var str='r'+circleObj.radius+'x'+circleObj.A.x+'y'+circleObj.A.y+'z'+circleObj.A.z+'x'+circleObj.B.x+'y'+circleObj.B.y+'z'+circleObj.B.z+'x'+circleObj.C.x+'y'+circleObj.C.y+'z'+circleObj.C.z;
+    return str;
+
+}
+
+function GetUniqKeyForDirection(coCirclesObj){
+    return coCirclesObj.AxisB;
+}
+
+function GetCircelAxisB(circel) {
+    var axis = "";
+    if (circel.B.x == 1) {
+        axis = "X";
+    }
+    else {
+        if (circel.B.x == -1) {
+            axis = "-X";
+        }
+        else {
+            if (circel.B.y == 1) {
+                axis = "Y";
+            }
+            else {
+                if (circel.B.y == -1) {
+                    axis = "-Y";
+                }
+                else {
+                    if (circel.B.z == 1) {
+                        axis = "Z";
+                    }
+                    else {
+                        if (circel.B.z == -1) {
+                            axis = "-Z";
+                        }    
+                    }
+                }
+            }
+        }
+    }
+  
+    if(axis == ""){
+        axis='| X '+circel.B.x+' | Y '+circel.B.y+' | Z '+circel.B.z;
+    }
+    return axis;
+
+}
+function GetCircelAxisC(circel) {
+
+
+    var axis = "";
+    if (circel.C.x == 1) {
+        axis = "X";
+    }
+    else {
+        if (circel.C.x == -1) {
+            axis = "-X";
+        }
+        else {
+            if (circel.C.y == 1) {
+                axis = "Y";
+            }
+            else {
+                if (circel.C.y == -1) {
+                    axis = "-Y";
+
+                }
+                else {
+                    if (circel.C.z == 1) {
+                        axis = "Z";
+                    }
+                    else {
+                        if (circel.C.z == -1) {
+                            axis = "-Z";
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+    if(axis==""){
+        axis='D';
+    }
+    return axis;
+
+}
+function GetGenCircelAxisB(circel) {
+    var axis = "";
+    if (circel.B.x == 1 || circel.B.x == -1) {
+        axis = "X";
+    }
+    else {
+        if (circel.B.y == 1 || circel.B.y == -1) {
+            axis = "Y";
+        }
+        else {
+            if (circel.B.z == 1 || circel.B.z == -1) {
+                axis = "Z";
+            }
+            
+        }
+    }
+    if(axis == "") {
+        axis = "Complex"+ '| X '+Math.abs(circel.B.x)+' | Y '+Math.abs(circel.B.y)+' | Z '+Math.abs(circel.B.z);
+
+    }
+    return axis;
+
+}
+function GetGenCircelAxisC(circel) {
+    var axis = "";
+    if (circel.C.x == 1 || circel.C.x == -1) {
+        axis = "X";
+    }
+    else {
+        if (circel.C.y == 1 || circel.C.y == -1) {
+            axis = "Y";
+        }
+        else {
+            if (circel.C.z == 1 || circel.C.z == -1) {
+                axis = "Z";
+            }
+        }
+    }
+    if(axis=="") {
+        axis =  "Complex";}
+     
+    return axis;
+
+}
+
+function CalcCoCircleType(circlesArr){
+    let type="";
+    if(circlesArr.length==2){ 
+                    
+        if(circlesArr[0].AbsulteAxisC!=circlesArr[1].AbsulteAxisC){
+            type='RADIUS';
+        }
+        else{
+            type='HOLE';
+        }
+    }
+    if(circlesArr.length==3) type='PIN';
+    if(circlesArr.length==4) type='CBOR';
+    if(type=='') type='OTHER';
+
+    return type;
+}
+
+
 //-------------------## DB
 const ClearDB = async (req, res, next) => {
     await Circel.deleteMany({});
     await CoCircel.deleteMany({});
     res.status(200).send("ok");
 }
+
+async function saveAll(docArray){
+    return Promise.all(docArray.map((doc) => doc.save()));
+}
+
 module.exports = {
     GetCirclesArr,
-    GetCoCirclesArr,
+    GetFeatArr,
+    GetDirectionsArr,
     GetMSPart,
     ClearDB,
 };

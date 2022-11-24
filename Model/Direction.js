@@ -7,6 +7,9 @@ const DirectionSchema = new mongoose.Schema({
     DirectionAxis: {
         type: String
     },
+    AbsAxis: {
+        type: String
+    },
     AngleAxis: {
         type: String
     },
@@ -20,6 +23,9 @@ const DirectionSchema = new mongoose.Schema({
     },
     PlanAxisList: {
         type: [String]
+    },
+    Features: {
+        type: [Object]
     },
     NumberOfFeat: {
         type: Number,

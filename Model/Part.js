@@ -1,18 +1,15 @@
 const mongoose = require("mongoose");
 
 const PartSchema = new mongoose.Schema({
+    PN: {
+        type: String,
+    },
     Index: {
         type: Number,
         default: 0,
     },
-    PN: {
-        type: String,
-    },
     FilePath: {
         type: String,
-    },
-    CoCircels: {
-        type: [Object]
     },
     boundingBox:{
         type: Number,
@@ -20,29 +17,22 @@ const PartSchema = new mongoose.Schema({
     },
     MS:{
         type: Number,
-        default: 2,
+        default: 0,
     },
     OriginalMS:{
         type: Number,
-        default: 2,
+        default: 0,
     },
     Directions:{
         type: [Object]
     },
-    RadiusCount:{
-        type:Number
+    DirectionStr:{
+        type: String
     },
-    PinCount:{
-        type:Number
+    FeatursNumber:{
+        type: Number,
+        default: 0,
     },
-    HolesCount:{
-        type:Number
-    },
-    OtherCount:{
-        type:Number
-    },
-    CBorCount:{
-        type:Number
-    }
+    
 });
 module.exports = mongoose.model("Part", PartSchema);

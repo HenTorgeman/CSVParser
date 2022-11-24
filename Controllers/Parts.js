@@ -1,10 +1,11 @@
 const Part= require("../Model/Part");
 const Circel = require("../Model/Circel");
-const CoCircel = require("../Model/CoCircel");
+const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/05-ScriptInput.csv'
+const { Resolver } = require("dns");
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/03-ScriptInput.csv'
 const colPartNumber=0;
 const colPath=1;
 const colMsOrigin=3;
@@ -33,69 +34,38 @@ const Start = async (req, res, next) => {
             let path=row[colPath];
             let originMs=row[colMsOrigin];
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
-            //let fileArr=partData[0].split("\n");
             partsName.push(pn);
             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
             saveAll(circlesArr);
-            const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
+            const coCirclesArr = await CalcController.GetFeatArr(circlesArr,pn);
             saveAll(coCirclesArr);
-            const directionArr = await CalcController.GetMSPart(coCirclesArr,pn);
-            // saveAll(directionArr);
-
-            
-            let radiusCount=0;
-            let pinCount=0;
-            let holesCount=0;
-            let otherCount=0;
-            let cBorCount=0;
-
-            coCirclesArr.map((e)=>{
-                if(e.type=='RADIUS')
-                    radiusCount++;
-                if(e.type=='PIN')
-                    pinCount++;
-                if(e.type=='OTHER')
-                    otherCount++;
-                if(e.type=='HOLE')
-                    holesCount++;
-                if(e.type=='CBOR')
-                    cBorCount++;
-            });
-            //If found only 1 surface that requier machining we need to add another 1 for the buttom.
-
-            let DirectionX=0;
-            let DirectionY=0;
-            let DirectionZ=0;
-
-            for(d of directionArr){
-                if(d =='X' || d =='-X') DirectionX++;
-                if(d =='Y' || d =='-Y') DirectionY++;
-                if(d =='Z' || d =='-Z') DirectionZ++;
+            const directionArr = await CalcController.GetDirectionsArr(coCirclesArr,pn);
+            const flag=await IsIncludeButtom(directionArr);
+           
+            if(flag==false) {
+                const d=new Direction({
+                    PN:pn,
+                    DirectionAxis:'Buttom',
+                    AbsAxis:'Buttom',
+                });
+                directionArr.push(d);
             }
-            if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
-                directionArr.push('Buttom');
-            }
-            //---------------------------------------------------------------------------------------
+            saveAll(directionArr);
 
+            let directionString=GetAsString(directionArr);
             let ms=directionArr.length;
 
             if(ms!=originMs) {mistakeRange++;
                 mistakeList.push(pn);
             }
-
             var part = Part({
-                index: index,
                 PN: pn,
+                index: index,
                 FilePath: path,
-                CoCircels: coCirclesArr,
                 Directions:directionArr,
+                DirectionStr:directionString,
                 MS:ms,
                 OriginalMS:originMs,
-                RadiusCount:radiusCount,
-                PinCount:pinCount,
-                HolesCount:holesCount,
-                OtherCount:otherCount,
-                CBorCount:cBorCount,
             });
             parts.push(part);
             index++;
@@ -112,19 +82,70 @@ const Start = async (req, res, next) => {
     res.status(200).send(obj);
 }
 
-
 async function saveAll(docArray){
     return Promise.all(docArray.map((doc) => doc.save()));
 }
 
 const ClearDB = async (req, res, next) => {
     await Circel.deleteMany({});
-    await CoCircel.deleteMany({});
+    await Feat.deleteMany({});
     await Direction.deleteMany({});
     await Part.deleteMany({});
     res.status(200).send("ok");
 }
 
+const IsIncludeButtom=(directionArr)=>
+new Promise(async resolve =>{
+    
+    let DirectionX=0;
+    let DirectionY=0;
+    let DirectionZ=0;
+    let flag=true;
+
+    for(d of directionArr){
+        if(d.DirectionAxis =='X' || d.DirectionAxis =='-X') DirectionX++;
+        if(d.DirectionAxis =='Y' || d.DirectionAxis =='-Y') DirectionY++;
+        if(d.DirectionAxis =='Z' || d.DirectionAxis =='-Z') DirectionZ++;
+    }
+    if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
+        flag= false;
+    }
+    resolve(flag);
+});
+async function IsIncludeNegative(directsionArr){
+    
+    let directions=['X','Y','Z'];
+    let DirectionX=0;
+    let DirectionY=0;
+    let DirectionZ=0;
+    let flag=true;
+
+    for(d of directionArr){
+        if(d =='X' || d =='-X') DirectionX++;
+        if(d =='Y' || d =='-Y') DirectionY++;
+        if(d =='Z' || d =='-Z') DirectionZ++;
+    }
+    if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
+        flag= false;
+    }
+
+    return flag;
+}
+function GetAsString(directionArr){
+    
+    let start='[ ';
+    let end=' ]';
+    let temp='';
+    let str='';
+
+    for(d of directionArr){
+        let axis = d.DirectionAxis;
+        temp=temp.concat(' #',axis);
+    }
+    str=str.concat(start,temp,end);
+    return str;
+
+}
 
 module.exports = {
     Start,

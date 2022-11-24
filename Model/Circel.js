@@ -1,48 +1,49 @@
 const mongoose = require("mongoose");
-const Base = require("./Action");
+const Base = require('./Action');
 const Point = require("./Point");
 
 
 const circelSchema = Base.discriminator("Circel",
     new mongoose.Schema({
-        radius: {
-            type: Number,
-            default: 0,
-        },
         PN:{
             type:String
         },
-        key:{
+        Radius: {
+            type: Number,
+            default: 0,
+        },
+        Key:{
             type:String
         },
-        pointsA: {
+        A: {
             type: Object
         },
-        pointsB: {
+        B: {
             type: Object
         },
-        pointsC: {
+        C: {
             type: Object
         },
+        
         AxisB: {
             type: String,
-            // enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
-            // default: 'X'
         },
         AxisC: {
             type: String,
-            // enum: ['X', 'Y', 'Z','-X','-Y','-Z','D'],
-            // default: 'X'
         },
-        GenAxisB: {
+        AbsulteAxisB: {
             type: String,
-            // enum: ['X', 'Y', 'Z','D'],
-            // default: 'X'
         },
-        GenAxisC: {
+        AbsulteAxisC: {
             type: String,
-            // enum: ['X', 'Y', 'Z','D'],
-            // default: 'X'
+        },
+        IsUsed:{
+            type:Boolean,
+            default:false,
+        },
+        IsComplex:{
+            type:Boolean,
+            default:false,
         },
     })
 );
