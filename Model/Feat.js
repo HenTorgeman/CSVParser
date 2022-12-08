@@ -4,7 +4,7 @@ const FeatSchema = new mongoose.Schema({
      PN:{
         type:String
     },
-    index: {
+        Index: {
         type: Number,
         default: 0,
     },
@@ -18,7 +18,6 @@ const FeatSchema = new mongoose.Schema({
     },
     AxisB: {
         type: String,
-       
     },
     RepreCount:{
         type:Number,

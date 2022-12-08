@@ -4,8 +4,8 @@ const fileUtilit = require("../Files");
 const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
 const Part = require("../Model/Part");
-const { off } = require("../Model/Part");
 var passCircelArr = [];
+var featIndex=0;
 
 //(01)
 const GetCirclesArr=(tableFile,pn)=>
@@ -15,7 +15,6 @@ const GetCirclesArr=(tableFile,pn)=>
 
     for(el of tableFile){        
         var row = el.split(" ");
-
         const response= await CreateNewCircel(row, tableFile, pn);
             if (response != null) {
                    var key=GetUniqKeyForCircle(response);
@@ -39,13 +38,15 @@ const GetCirclesArr=(tableFile,pn)=>
 //(02)
 const GetFeatArr=(circleArr,pn)=>
 new Promise(async resolve =>{
+    featIndex=0;
     const completeCirclesArr=[];
     for(c of circleArr){
-       const coCirc=await CreateFeat(c,pn);
+       const coCirc=await CreateFeat(c,pn,featIndex);
 
        if(coCirc != null){
             coCirc.PN = pn;
             completeCirclesArr.push(coCirc);
+            featIndex++;
         }
     }
     resolve(completeCirclesArr);
@@ -56,10 +57,14 @@ const GetDirectionsArr=(faetArr,pn)=>
 new Promise(async resolve =>{
     const Directions=[];
     const DirectionsString=["X","-X","Z","-Z","Y","-Y"];
-    let FeatList= faetArr;
+    const DirectionStringSet=[];
+    let FeatList = faetArr;
     for(s of DirectionsString){
-        let directionObj=await CreateDirectionObject(s,pn);
+
+        let templist=FeatList.filter((item) => item.AxisB== s);
+        let directionObj=await CreateDirectionObject(s,pn,templist);
         Directions.push(directionObj);
+        DirectionStringSet.push(directionObj.DirectionAxis);
         let filltered = FeatList.filter((item) => item.AxisB != s);
         FeatList = filltered;
     }
@@ -67,10 +72,14 @@ new Promise(async resolve =>{
     if(FeatList.length>0){
     
         for(f of FeatList){
-            let directionObj=await CreateDirectionObject(f.AxisB,pn);
-            Directions.push(directionObj);
-            let filltered= FeatList.filter((item) => item.AxisB != f.AxisB);
-            FeatList=filltered;
+            if(!DirectionStringSet.includes(f.AxisB)){
+                let templist=FeatList.filter((item) => item.AxisB== f.AxisB);
+                let directionObj=await CreateDirectionObject(f.AxisB,pn,templist);
+                Directions.push(directionObj);
+                DirectionStringSet.push(directionObj.DirectionAxis);
+                let filltered= FeatList.filter((item) => item.AxisB != f.AxisB);
+                FeatList=filltered;
+            }
         }
     }
     if(FeatList.length!=0){
@@ -97,7 +106,7 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
                 index: index,
                 indexText: indexText,
                 actionName: name.toString().replace(/[^\w\s]/gi, ''),
-                radius: parseFloat(radius).toFixed(2),
+                Radius: parseFloat(radius).toFixed(2),
             });
 
             //get the direction AXIS2_PLACEMENT_3D
@@ -189,8 +198,8 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
                                                 
                                                 circel.PN=pn;
                                                 circel.AxisB = GetCircelAxisB(circel);
-                                                // circel.AxisC = GetCircelAxisC(circel);
                                                 circel.AbsulteAxisB = GetGenCircelAxisB(circel);
+                                                // circel.AxisC = GetCircelAxisC(circel);
                                                 // circel.AbsulteAxisC = GetGenCircelAxisC(circel);
                                                 if(circel.AbsulteAxisB.length>3){
                                                     circel.IsComplex=true;
@@ -213,15 +222,11 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
 });
 
 //(02-1)
-const CreateFeat=(circelObj,pn)=>
+const CreateFeat=(circelObj,pn,index)=>
     new Promise(async resolve=>{
-
-    // const docs =await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
     const docs =await Circel.find({ PN:pn,AbsulteAxisB: circelObj.AbsulteAxisB}).exec();
-    //Docs : Group of circles that is not used already, same pn, and same AbsDirection (Y,X,Z,Complex)
     
     if(docs.length==0) {
-        // console.log("## (docs.length==0)s");
         resolve(null);}
     else{
             var axis = circelObj.AxisB;
@@ -234,15 +239,16 @@ const CreateFeat=(circelObj,pn)=>
             if (!passCircelArr.includes(id)) {
 
                 if(circelObj.IsComplex==true){
-     
-                    var newArr = docs;
+                    newArr = docs.filter(function (e) {
+                        // return e.A.x === x || e.A.z === z || e.A.y===y
+                        return e.A.y === y && e.A.z === z || e.A.x === x && e.A.z === z || e.A.y === y && e.A.x === x;
+                    });
                 }
                 else{
                     if (circelObj.AbsulteAxisB=='X') {
                         newArr = docs.filter(function (e) {
                             return e.A.y === y && e.A.z === z;
                         });
-                    
                     }
                     else{
                         if (circelObj.AbsulteAxisB=='Y') {
@@ -262,31 +268,31 @@ const CreateFeat=(circelObj,pn)=>
                         }
                     }
                 }
-                //Complex Feats
+
                 if(newArr.length>0){
                     let type=CalcCoCircleType(newArr);
                     let DirectionsAxis = CalcFeatsDirection(newArr);
-                    var coCirc = new Feat({
-                        circels: newArr,
-                        AxisB: DirectionsAxis,
-                        AbsulteAxisB:circelObj.AbsulteAxisB,
-                        AbsulteAxisC:circelObj.AbsulteAxisC,
-                        radius: circelObj.radius,
-                        RepreCount: newArr.length,
-                        type:type,
-                        IsComplex:circelObj.IsComplex
-                    });
-
-                    newArr.forEach(element => {
-                        passCircelArr.push(element._id.toString());
-                    });
-                    // console.log("## Feat Completed!");
-                    // console.log(coCirc);
-                    resolve(coCirc);
+                    if(DirectionsAxis!=null){
+                        var feat = new Feat({
+                            PN:pn,
+                            circels: newArr,
+                            AxisB: DirectionsAxis,
+                            AbsulteAxisB:circelObj.AbsulteAxisB,
+                            AbsulteAxisC:circelObj.AbsulteAxisC,
+                            radius: circelObj.Radiuss,
+                            RepreCount: newArr.length,
+                            type:type,
+                            IsComplex:circelObj.IsComplex,
+                            Index:index,
+                        });
+                        newArr.map((doc) => passCircelArr.push(doc._id.toString()));
+                        resolve(feat);
+                    }
+                    newArr.map((doc) => passCircelArr.push(doc._id.toString()));
+                    resolve(null);
                 }
             }
             else{
-                // console.log("## Circ already include");
                 resolve(null);
         
             }
@@ -297,39 +303,103 @@ const CreateFeat=(circelObj,pn)=>
 //(02-2)
 function CalcFeatsDirection(circlesArr){
 
-    const allMap = new Map();
+    let firstCircle=circlesArr[0];
+    let AbsAxis=firstCircle.AbsulteAxisB;
     let maxVal=0;
-    let maxKey='';
+    let PrimeryCircle=firstCircle;
 
-    for(el of circlesArr){
-        if(!allMap.has(el.AxisB)){
-            allMap.set(el.AxisB,1);
-        }
-        else{
-            let val=allMap.get(el.AxisB);
-            allMap.delete(el.AxisB);
-            allMap.set(el.AxisB,val+1);
-        }
-    }
-    if(allMap.size>1){        
-        for(el of allMap){
-            if(el[1]>maxVal){
-                maxVal=el[1];
-                maxKey=el[0];
+    if(firstCircle.IsComplex==true){
+        PrimeryCircle=firstCircle;
+        let maxRadius=PrimeryCircle.Radius;
+
+            for(el of circlesArr){
+                if(el.Radius>=maxRadius){
+                    PrimeryCircle=el;
+                    maxRadius=el.Radius;
+                }       
+            }            
+     }
+
+    else{
+        for(el of circlesArr){
+            //ABSAxisB= X
+            if(AbsAxis=='X'){
+                if(Math.abs(el.A.x)>maxVal)
+                {
+                    PrimeryCircle=el;
+                    maxVal=Math.abs(el.A.x);
+                }
             }
-        }    
+
+            //ABSAxisB= Y
+            if(AbsAxis=='Y'){
+                if(Math.abs(el.A.y)>maxVal)
+                {
+                    PrimeryCircle=el;
+                    maxVal=Math.abs(el.A.y);
+
+                } 
+            }
+
+            //ABSAxisB= Z
+            if(AbsAxis=='Z'){
+                if(Math.abs(el.A.z)>maxVal)
+                {
+                    PrimeryCircle=el;
+                    maxVal=Math.abs(el.A.z);
+
+                }
+            }
+        }
     }
-    const mapIter = allMap.entries();
-
-    if(maxKey == '') maxKey=mapIter.next().value[0];
-        
-    if(maxKey==null) console.log("Null");
-    return maxKey;
-
+    if(PrimeryCircle!=null){
+        return PrimeryCircle.AxisB;
+    }
+    else{
+        console.log("#Attention :Null");
+        console.log("AbsAxis: "+AbsAxis);
+        return null;
+    }
 }
 
+
+
+// //(02-2)
+// function CalcFeatsDirection(circlesArr){
+
+//     const allMap = new Map();
+//     let maxVal=0;
+//     let maxKey='';
+
+//     for(el of circlesArr){
+//         if(!allMap.has(el.AxisB)){
+//             allMap.set(el.AxisB,1);
+//         }
+//         else{
+//             let val=allMap.get(el.AxisB);
+//             allMap.delete(el.AxisB);
+//             allMap.set(el.AxisB,val+1);
+//         }
+//     }
+//     if(allMap.size>1){        
+//         for(el of allMap){
+//             if(el[1]>maxVal){
+//                 maxVal=el[1];
+//                 maxKey=el[0];
+//             }
+//         }    
+//     }
+//     const mapIter = allMap.entries();
+
+//     if(maxKey == '') maxKey=mapIter.next().value[0];
+        
+//     if(maxKey==null) console.log("Null");
+//     return maxKey;
+
+// }
+
 //(02-3)
-const CreateDirectionObject=(s,pn)=>
+const CreateDirectionObject=(s,pn,tempList)=>
 new Promise(async resolve=>{
 
 let absAxis='';
@@ -337,21 +407,18 @@ if(s == 'X' || s == '-X') absAxis='X';
 if(s == 'Y' || s == '-Y') absAxis='Y';
 if(s == 'Z' || s == '-Z') absAxis='Z';
 if(absAxis == '') {
-    // console.log("Complex Direction "+pn);
     absAxis='Complex';
 }
 
-// const docs =await Circel.find({ GenAxisB: circelObj.GenAxisB, GenAxisC: circelObj.GenAxisC }).exec();
-const featList =await Feat.find({ PN:pn,AxisB:s }).exec();
 const direction=new Direction({
     PN:pn,
     DirectionAxis:s,
-    Features:featList,
+    Features:tempList,
     AbsAxis:absAxis,
-    NumberOfFeat:featList.length,
+    NumberOfFeat:tempList.length,
 });
 
-    resolve(direction);
+resolve(direction);
 
 });
 

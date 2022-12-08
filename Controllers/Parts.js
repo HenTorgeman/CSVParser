@@ -5,7 +5,8 @@ const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
 const { Resolver } = require("dns");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/03-ScriptInput.csv'
+const { time } = require("console");
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/05-ScriptInput.csv'
 const colPartNumber=0;
 const colPath=1;
 const colMsOrigin=3;
@@ -21,6 +22,12 @@ const Start = async (req, res, next) => {
     const partsName=[];
     let mistakeRange=0;
     const mistakeList=[];
+
+    let date_ob = new Date();
+    let hours = date_ob.getHours();
+    let minutes = date_ob.getMinutes();
+    let seconds = date_ob.getSeconds();
+    console.log("##---START----- : "+ hours + ":" + minutes +":"+seconds);
     
     for(el of table){      
         let row=el.split(",");
@@ -30,6 +37,7 @@ const Start = async (req, res, next) => {
         }
         else{
             // Its Line
+    
             console.log("## Calculate data for.. "+ pn +"....."+index+"/"+table.length);
             let path=row[colPath];
             let originMs=row[colMsOrigin];
@@ -37,11 +45,12 @@ const Start = async (req, res, next) => {
             partsName.push(pn);
             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
             saveAll(circlesArr);
-            const coCirclesArr = await CalcController.GetFeatArr(circlesArr,pn);
-            saveAll(coCirclesArr);
-            const directionArr = await CalcController.GetDirectionsArr(coCirclesArr,pn);
+            const featsArr = await CalcController.GetFeatArr(circlesArr,pn);
+            saveAll(featsArr);
+            const directionArr = await CalcController.GetDirectionsArr(featsArr,pn);
             const flag=await IsIncludeButtom(directionArr);
            
+            //## If Buttom without feat but need to machine that side.
             if(flag==false) {
                 const d=new Direction({
                     PN:pn,
@@ -52,12 +61,19 @@ const Start = async (req, res, next) => {
             }
             saveAll(directionArr);
 
+            //## Calc how many feats in part.
+            let totalFeats=0;
+            directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
+
+            //## Print the direction string
             let directionString=GetAsString(directionArr);
             let ms=directionArr.length;
 
+            //## Print the correct sate
             if(ms!=originMs) {mistakeRange++;
                 mistakeList.push(pn);
             }
+
             var part = Part({
                 PN: pn,
                 index: index,
@@ -66,13 +82,19 @@ const Start = async (req, res, next) => {
                 DirectionStr:directionString,
                 MS:ms,
                 OriginalMS:originMs,
+                FeatursNumber:totalFeats
+
             });
             parts.push(part);
             index++;
         }
     }
     saveAll(parts);
-    console.log("## Done! All parts created!");
+     date_ob = new Date();
+     hours = date_ob.getHours();
+     minutes = date_ob.getMinutes();
+     seconds = date_ob.getSeconds();
+    console.log("##---DONE----- : "+ hours + ":" + minutes +":"+seconds);
 
     const obj={
         title:'Your mistake range is : ' + mistakeRange +' out of : '+parts.length,
