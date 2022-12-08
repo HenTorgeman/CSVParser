@@ -1,10 +1,12 @@
 const Part= require("../Model/Part");
 const Circel = require("../Model/Circel");
-const CoCircel = require("../Model/CoCircel");
+const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
 var CalcController = require("./Calc");
 const fs = require("fs");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/03-ScriptInput.csv'
+const { Resolver } = require("dns");
+const { time } = require("console");
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/05-ScriptInput.csv'
 const colPartNumber=0;
 const colPath=1;
 const colMsOrigin=3;
@@ -20,6 +22,12 @@ const Start = async (req, res, next) => {
     const partsName=[];
     let mistakeRange=0;
     const mistakeList=[];
+
+    let date_ob = new Date();
+    let hours = date_ob.getHours();
+    let minutes = date_ob.getMinutes();
+    let seconds = date_ob.getSeconds();
+    console.log("##---START----- : "+ hours + ":" + minutes +":"+seconds);
     
     for(el of table){      
         let row=el.split(",");
@@ -29,69 +37,64 @@ const Start = async (req, res, next) => {
         }
         else{
             // Its Line
-            console.log("## Calculate data for.. "+ pn);
+    
+            console.log("## Calculate data for.. "+ pn +"....."+index+"/"+table.length);
             let path=row[colPath];
-            console.log(path);
             let originMs=row[colMsOrigin];
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
-            //let fileArr=partData[0].split("\n");
             partsName.push(pn);
             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
             saveAll(circlesArr);
-            const coCirclesArr = await CalcController.GetCoCirclesArr(circlesArr,pn);
-            saveAll(coCirclesArr);
-            const directionArr = await CalcController.GetMSPart(coCirclesArr,pn);
-            // saveAll(directionArr);
+            const featsArr = await CalcController.GetFeatArr(circlesArr,pn);
+            saveAll(featsArr);
+            const directionArr = await CalcController.GetDirectionsArr(featsArr,pn);
+            const flag=await IsIncludeButtom(directionArr);
+           
+            //## If Buttom without feat but need to machine that side.
+            if(flag==false) {
+                const d=new Direction({
+                    PN:pn,
+                    DirectionAxis:'Buttom',
+                    AbsAxis:'Buttom',
+                });
+                directionArr.push(d);
+            }
+            saveAll(directionArr);
 
-            
-            let radiusCount=0;
-            let pinCount=0;
-            let holesCount=0;
-            let otherCount=0;
-            let cBorCount=0;
+            //## Calc how many feats in part.
+            let totalFeats=0;
+            directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
 
-            coCirclesArr.map((e)=>{
-                if(e.type=='RADIUS')
-                    radiusCount++;
-                if(e.type=='PIN')
-                    pinCount++;
-                if(e.type=='OTHER')
-                    otherCount++;
-                if(e.type=='HOLE')
-                    holesCount++;
-                if(e.type=='CBOR')
-                    cBorCount++;
-            });
-
-
-            //If found only 1 surface that requier machining we need to add another 1 for the buttom.
+            //## Print the direction string
+            let directionString=GetAsString(directionArr);
             let ms=directionArr.length;
-            if(ms==1) ms=2;
 
+            //## Print the correct sate
             if(ms!=originMs) {mistakeRange++;
                 mistakeList.push(pn);
             }
 
             var part = Part({
-                index: index,
                 PN: pn,
+                index: index,
                 FilePath: path,
-                CoCircels: coCirclesArr,
                 Directions:directionArr,
+                DirectionStr:directionString,
                 MS:ms,
                 OriginalMS:originMs,
-                RadiusCount:radiusCount,
-                PinCount:pinCount,
-                HolesCount:holesCount,
-                OtherCount:otherCount,
-                CBorCount:cBorCount,
+                FeatursNumber:totalFeats
+
             });
             parts.push(part);
             index++;
         }
     }
     saveAll(parts);
-    console.log("## Done! All parts created!");
+     date_ob = new Date();
+     hours = date_ob.getHours();
+     minutes = date_ob.getMinutes();
+     seconds = date_ob.getSeconds();
+    console.log("##---DONE----- : "+ hours + ":" + minutes +":"+seconds);
 
     const obj={
         title:'Your mistake range is : ' + mistakeRange +' out of : '+parts.length,
@@ -101,19 +104,70 @@ const Start = async (req, res, next) => {
     res.status(200).send(obj);
 }
 
-
 async function saveAll(docArray){
     return Promise.all(docArray.map((doc) => doc.save()));
 }
 
 const ClearDB = async (req, res, next) => {
     await Circel.deleteMany({});
-    await CoCircel.deleteMany({});
+    await Feat.deleteMany({});
     await Direction.deleteMany({});
     await Part.deleteMany({});
     res.status(200).send("ok");
 }
 
+const IsIncludeButtom=(directionArr)=>
+new Promise(async resolve =>{
+    
+    let DirectionX=0;
+    let DirectionY=0;
+    let DirectionZ=0;
+    let flag=true;
+
+    for(d of directionArr){
+        if(d.DirectionAxis =='X' || d.DirectionAxis =='-X') DirectionX++;
+        if(d.DirectionAxis =='Y' || d.DirectionAxis =='-Y') DirectionY++;
+        if(d.DirectionAxis =='Z' || d.DirectionAxis =='-Z') DirectionZ++;
+    }
+    if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
+        flag= false;
+    }
+    resolve(flag);
+});
+async function IsIncludeNegative(directsionArr){
+    
+    let directions=['X','Y','Z'];
+    let DirectionX=0;
+    let DirectionY=0;
+    let DirectionZ=0;
+    let flag=true;
+
+    for(d of directionArr){
+        if(d =='X' || d =='-X') DirectionX++;
+        if(d =='Y' || d =='-Y') DirectionY++;
+        if(d =='Z' || d =='-Z') DirectionZ++;
+    }
+    if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
+        flag= false;
+    }
+
+    return flag;
+}
+function GetAsString(directionArr){
+    
+    let start='[ ';
+    let end=' ]';
+    let temp='';
+    let str='';
+
+    for(d of directionArr){
+        let axis = d.DirectionAxis;
+        temp=temp.concat(' #',axis);
+    }
+    str=str.concat(start,temp,end);
+    return str;
+
+}
 
 module.exports = {
     Start,
