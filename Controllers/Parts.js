@@ -6,7 +6,7 @@ var CalcController = require("./Calc");
 const fs = require("fs");
 const { Resolver } = require("dns");
 const { time } = require("console");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/05-ScriptInput.csv'
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/TG01-ScriptInput.csv'
 const colPartNumber=0;
 const colPath=1;
 const colMsOrigin=3;
@@ -28,7 +28,8 @@ const Start = async (req, res, next) => {
     let minutes = date_ob.getMinutes();
     let seconds = date_ob.getSeconds();
     console.log("##---START----- : "+ hours + ":" + minutes +":"+seconds);
-    
+    // for(let i=0;i<4;i++){
+    //     let el=table[i];
     for(el of table){      
         let row=el.split(",");
         let pn=row[colPartNumber];
@@ -44,21 +45,12 @@ const Start = async (req, res, next) => {
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             partsName.push(pn);
             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
+            const bounding=await CalcController.GetBounding(circlesArr,pn,partData);
             saveAll(circlesArr);
-            const featsArr = await CalcController.GetFeatArr(circlesArr,pn);
+            const featsArr = await CalcController.GetFeatArr(circlesArr,pn,bounding);
             saveAll(featsArr);
-            const directionArr = await CalcController.GetDirectionsArr(featsArr,pn);
-            const flag=await IsIncludeButtom(directionArr);
-           
-            //## If Buttom without feat but need to machine that side.
-            if(flag==false) {
-                const d=new Direction({
-                    PN:pn,
-                    DirectionAxis:'Buttom',
-                    AbsAxis:'Buttom',
-                });
-                directionArr.push(d);
-            }
+            const directionArr = await CalcController.GetDirectionsArr(featsArr,pn,bounding);
+
             saveAll(directionArr);
 
             //## Calc how many feats in part.
@@ -82,8 +74,8 @@ const Start = async (req, res, next) => {
                 DirectionStr:directionString,
                 MS:ms,
                 OriginalMS:originMs,
-                FeatursNumber:totalFeats
-
+                FeatursNumber:totalFeats,
+                BoundingBox:bounding,
             });
             parts.push(part);
             index++;

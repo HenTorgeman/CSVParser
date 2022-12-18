@@ -33,6 +33,9 @@ const PartSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    BoundingBox:{
+        type:Object
+    }
     
 });
 module.exports = mongoose.model("Part", PartSchema);

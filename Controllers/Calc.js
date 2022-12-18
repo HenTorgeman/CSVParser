@@ -4,6 +4,8 @@ const fileUtilit = require("../Files");
 const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
 const Part = require("../Model/Part");
+const e = require("express");
+const Bounding = require("../Model/Bounding");
 var passCircelArr = [];
 var featIndex=0;
 
@@ -13,9 +15,14 @@ const GetCirclesArr=(tableFile,pn)=>
     var circleArr=[];
     var dictionary =[];
 
-    for(el of tableFile){        
+    let filteredArr=tableFile.filter(e=>{
+        let r=e.split(" ");
+        return r[2]==="CIRCLE";
+    });
+
+    for(el of filteredArr){        
         var row = el.split(" ");
-        const response= await CreateNewCircel(row, tableFile, pn);
+        const response= await CreateNewCircelAction(row, tableFile, pn);
             if (response != null) {
                    var key=GetUniqKeyForCircle(response);
                    let valExist = dictionary.some(obj => obj.key === key);
@@ -29,19 +36,241 @@ const GetCirclesArr=(tableFile,pn)=>
                     circleArr.push(response);
                 }
                 else{
+                    //Not cirecle action.
                 }
             }
     }
     resolve(circleArr);
 });
 
+//(03)
+// const GetBounding=(tableFile,pn)=>
+//     new Promise(async resolve =>{
+//     let arrayX=[];
+//     let arrayY=[];
+//     let arrayZ=[];
+
+//     let filteredArr=tableFile.filter(e=>{
+//         let r=e.split(" ");
+//         return r[2]==="CARTESIAN_POINT";
+//     });
+//     for(el of filteredArr){       
+//             let rowArr = el.split(" ");
+//             let x = parseFloat(rowArr[7]);
+//             let y = parseFloat(rowArr[8]);
+//             let z = parseFloat(rowArr[9]);
+//             arrayX.push(x);
+//             arrayY.push(y);
+//             arrayZ.push(z);
+//     }
+
+//     let MaxX= Math.max(...arrayX);
+//     let MinX= Math.min(...arrayX);
+//     let MaxY= Math.max(...arrayY);
+//     let MinY= Math.min(...arrayY);
+//     let MaxZ= Math.max(...arrayZ);
+//     let MinZ= Math.min(...arrayZ);
+//     const point= new Point({
+//         x:(MaxX-MinX)/2,
+//         y:(MaxY-MinY)/2,
+//         z:(MaxZ-MinZ)/2,
+//     });
+
+//     const bounding= new Bounding({
+//         PN:pn,
+//         MaxX: MaxX,
+//         MinX: MinX,
+//         MaxY: MaxY,
+//         MinY: MinY,
+//         MaxZ: MaxZ,
+//         MinZ: MinZ,
+//         MiddlePoint:point
+//     });
+
+//     resolve(bounding);
+// });
+
+const GetBounding=(circleArr,pn,fullTable)=>
+
+    new Promise(async resolve =>{
+
+        //-----------------------Data collection
+
+        let arrayX=[];
+        let arrayY=[];
+        let arrayZ=[];
+
+        //Option1 :By General area
+        let filteredArr=fullTable.filter(e=>{
+            let r=e.split(" ");
+            return r[2]==="CARTESIAN_POINT";
+        });
+        //Option2 :By Feats area
+        // for(el of circleArr){   
+        //     arrayX.push(el.A.x);
+        //     arrayY.push(el.A.y);
+        //     arrayZ.push(el.A.z);
+        // }
+
+        for(el of filteredArr){        
+            var row = el.split(" ");
+            let x = parseFloat(row[7]).toFixed(2);
+            let y = parseFloat(row[8]).toFixed(2);
+            let z = parseFloat(row[9]).toFixed(2);
+            arrayX.push(x);
+            arrayY.push(y);
+            arrayZ.push(z);
+        }
+        
+        let MaxX= parseFloat(Math.max(...arrayX));
+        let MinX= parseFloat(Math.min(...arrayX));
+        let MaxY= parseFloat(Math.max(...arrayY));
+        let MinY= parseFloat(Math.min(...arrayY));
+        let MaxZ= parseFloat(Math.max(...arrayZ));
+        let MinZ= parseFloat(Math.min(...arrayZ));
+        
+
+        //-----------------------Data Calculation
+        let xRange=0;
+        let yRange=0;
+        let zRange=0;
+
+
+        if(MaxX+MinX==0)
+        {   xRange=Math.abs(MaxX)+Math.abs(MinX);
+        }
+        else
+        {
+            //  xRange=Math.abs(MaxX)>Math.abs(MinX)? MaxX-MinX:MinX-MaxX;
+            xRange= MaxX-MinX;
+        }
+
+        if(MaxY+MinY==0)
+        {    yRange=Math.abs(MaxY)+Math.abs(MinY);}
+        else{
+            //  yRange=Math.abs(MaxY)>Math.abs(MinY)? MaxY-MinY:MinY-MaxY;
+            yRange= MaxY-MinY;
+        }
+
+        if(MaxZ+MinZ==0)
+        {    zRange=Math.abs(MaxZ)+Math.abs(MinZ);}
+        else{
+            //  zRange=Math.abs(MaxZ)>Math.abs(MinZ)? MaxZ-MinZ:MinZ-MaxZ;
+            zRange= MaxZ-MinZ;
+
+        }
+
+        let areaX=Math.abs(xRange);
+        let areaY=Math.abs(yRange);
+        let areaZ=Math.abs(zRange);
+
+        let w="";
+        let h="";
+        let l="";
+        let wVal=0;
+        let hVal=0;
+        let lVal=0;
+        
+        //Calculating whos is W H L.
+        if(areaX>=areaY&&areaX>=areaZ){
+            l='X';
+            lVal=areaX;
+
+            if(areaY>=areaZ)
+            {   w='Y';
+                wVal=areaY;
+                h='Z';
+                hVal=areaZ;
+            }
+            else{
+                w='Z';
+                wVal=areaZ;
+                h='Y';
+                hVal=areaY;
+
+            }
+        }
+        else{
+            if(areaY>=areaX&&areaY>=areaZ){
+                l='Y';
+                lVal=areaY;
+
+                if(areaX>=areaZ)
+                {   w='X';
+                    wVal=areaX;
+                    h='Z';
+                    hVal=areaZ;
+                }
+                else{
+                    w='Z';
+                    wVal=areaZ;
+                    h='X';
+                    hVal=areaX;
+
+                }
+            }
+            else{
+                    l='Z';
+                    lVal=areaZ;
+
+                    if(areaX>=areaY)
+                    {   w='X';
+                        wVal=areaX;
+
+                        h='Y';
+                        hVal=areaY;
+
+                    }
+                    else{
+                        w='Y';
+                        wVal=areaY;
+                        h='X';
+                        hVal=areaX;
+                    }
+                }
+        }
+
+        let MiddleX=MaxX<0 ? xRange/2*(-1): xRange/2;
+        let MiddleY=MaxY<0 ? yRange/2*(-1): yRange/2;
+        let MiddleZ=MaxZ<0 ? zRange/2*(-1): zRange/2;
+
+        MiddleX = MaxX+MinX==0? 0: MiddleX;
+        MiddleY = MaxY+MinY== 0 ? 0: MiddleY;    
+        MiddleZ = MaxZ+MinZ== 0 ? 0: MiddleZ;
+
+        const point= new Point({
+            x:MiddleX,
+            y:MiddleY,
+            z:MiddleZ,
+        });
+
+        const bounding= new Bounding({
+            PN:pn,
+            MaxX: MaxX,
+            MinX: MinX,
+            MaxY: MaxY,
+            MinY: MinY,
+            MaxZ: MaxZ,
+            MinZ: MinZ,
+            MiddlePoint:point,
+            W:w,
+            L:l,
+            H:h,
+            Hval:hVal,
+            Wval:wVal,
+            Lval:lVal
+        });
+
+    resolve(bounding);
+});
+
 //(02)
-const GetFeatArr=(circleArr,pn)=>
+const GetFeatArr=(circleArr,pn,bounding)=>
 new Promise(async resolve =>{
     featIndex=0;
     const completeCirclesArr=[];
     for(c of circleArr){
-       const coCirc=await CreateFeat(c,pn,featIndex);
+       const coCirc=await CreateFeat(c,pn,featIndex,bounding);
 
        if(coCirc != null){
             coCirc.PN = pn;
@@ -53,7 +282,7 @@ new Promise(async resolve =>{
 });
 
 //(03)
-const GetDirectionsArr=(faetArr,pn)=>
+const GetDirectionsArr=(faetArr,pn,bounding)=>
 new Promise(async resolve =>{
     const Directions=[];
     const DirectionsString=["X","-X","Z","-Z","Y","-Y"];
@@ -87,11 +316,66 @@ new Promise(async resolve =>{
     }
    
     const filltered= Directions.filter((item) => item.NumberOfFeat>0);
+
+    // ## Buttom to Machine
+    let positiveH=bounding.H;
+    let negativeH='-'+bounding.H;
+    let emptyList=[];
+
+    if(filltered.filter((item) => item.DirectionAxis==negativeH.toString()).length==0){
+    // if(filltered.includes(positiveH.toString())==false){
+        let directionObj=await CreateDirectionObject(negativeH,pn,emptyList);
+        filltered.push(directionObj);
+    }
+    if(filltered.filter((item) => item.DirectionAxis==positiveH.toString()).length==0){
+    // if(filltered.includes(negativeH.toString())==false){
+        let directionObj=await CreateDirectionObject(positiveH,pn,emptyList);
+        filltered.push(directionObj);
+    }
+    // ## High Sides to Machine
+    if(bounding.Hval>50){
+        let positiveW=bounding.W;
+        let negativeW='-'+bounding.W;
+        let positiveL=bounding.L;
+        let negativeL='-'+bounding.L;
+
+        if(filltered.filter((item) => item.DirectionAxis==positiveW.toString()).length==0){
+        // if(filltered.includes(positiveW.toString())==false) {
+            let directionObj=await CreateDirectionObject(positiveW,pn,emptyList);
+            filltered.push(directionObj);}
+
+        if(filltered.filter((item) => item.DirectionAxis==negativeW.toString()).length==0){
+        // if(filltered.includes(negativeW.toString())==false) {
+            let directionObj=await CreateDirectionObject(negativeW,pn,emptyList);
+            filltered.push(directionObj);
+        }
+        if(filltered.filter((item) => item.DirectionAxis==positiveL.toString()).length==0){
+        // if(filltered.includes(positiveL.toString())==false) {
+            let directionObj=await CreateDirectionObject(positiveL,pn,emptyList);
+            filltered.push(directionObj);
+        }
+        if(filltered.filter((item) => item.DirectionAxis==negativeL.toString()).length==0){
+        // if(filltered.includes(negativeL.toString())==false) {
+            let directionObj=await CreateDirectionObject(negativeL,pn,emptyList);
+            filltered.push(directionObj);
+        }
+    }
+    
     resolve(filltered);
 });
 
+//(04)
+
+const ReduceDirections=(DirectionArr,pn,bounding)=>
+new Promise(async resolve =>{
+
+    //1. need to understand which DirectionAxis is must and which is not.
+
+    resolve(null);
+});
+
 //(01-1)
-const CreateNewCircel=(rowArr, fileArr,pn)=>
+const CreateNewCircelAction=(rowArr, fileArr,pn)=>
     new Promise(resolve=>{
     
         if (rowArr[2] === "CIRCLE") {
@@ -221,40 +505,176 @@ const CreateNewCircel=(rowArr, fileArr,pn)=>
         resolve(null)
 });
 
+/*
+                            AbsAxis
+
+                                option1: circlesArr.length==1  -> Radius | Possible
+                                option1: isOneDirection=true && circlesArr.length>1   -> BHOLE | Not Possible
+                                option2: isOneDirection=false && MaxRadiusesCircle.isOneDirection=true ->CBOR | Not possible 
+                                option2: isOneDirection=false && MaxRadiusesCircle.isOneDirection=false ->HOLE | Possible
+*/
+/*
+                            Process
+
+                            1. check AbsAxis
+                                1.1 check length
+                                    1.1.1 =1 -> Radius, Possible, Array[0].x +-
+                                    1.1.2 >1 ->
+                                        1.1.2.1 isOneDirection=true -> BHOLE, NotPossible, Array[0].x +-
+                                        1.1.2.1 isOneDirection=false ->
+                                            1.1.2.2 if MaxRadiusesCircle.isOneDirection=true ->CBOR | Not possible | MaxRadiusesCircle.x+-
+                                            1.1.2.2 if MaxRadiusesCircle.isOneDirection=false ->HOLE | Possible | MaxRadiusesCircle.x+-
+
+*/
+
 //(02-1)
-const CreateFeat=(circelObj,pn,index)=>
+const CreateFeat=(circelObj,pn,index,bounding)=>
     new Promise(async resolve=>{
     const docs =await Circel.find({ PN:pn,AbsulteAxisB: circelObj.AbsulteAxisB}).exec();
     
-    if(docs.length==0) {
-        resolve(null);}
+    if(docs.length==0) resolve(null);
     else{
-            var axis = circelObj.AxisB;
             var y = circelObj.A.y;
             var x = circelObj.A.x;
             var z = circelObj.A.z;
             var id = circelObj._id.toString();
+            let AbsAxis=circelObj.AbsulteAxisB;
+            let isOneDirection;
+            let isPossibleBoth;
+            let maxRadius;
+            let type;
+            let direction;
+            let MiddlePointPart=bounding.MiddlePoint;
 
             var newArr = [];
-            if (!passCircelArr.includes(id)) {
-
+            if (passCircelArr.includes(id)) resolve(null);
+            
+            else {
                 if(circelObj.IsComplex==true){
+                    //NEED TO IMPLEMENT BETTER
                     newArr = docs.filter(function (e) {
-                        // return e.A.x === x || e.A.z === z || e.A.y===y
                         return e.A.y === y && e.A.z === z || e.A.x === x && e.A.z === z || e.A.y === y && e.A.x === x;
                     });
+
+                    if(newArr.length>0){
+
+                        let circleArr=newArr;
+                        maxRadius=Math.max(...circleArr.map(o => o.Radius));
+                        let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});      
+                        isOneDirection=false; 
+                        isPossibleBoth=false;
+                        type='COMPLEX';
+                        direction=MaxRadiusArr[0].AxisB;
+                    }
                 }
                 else{
                     if (circelObj.AbsulteAxisB=='X') {
                         newArr = docs.filter(function (e) {
                             return e.A.y === y && e.A.z === z;
                         });
-                    }
+                        if(newArr.length>0){
+                            let circleArr=newArr;
+                   
+                            if(circleArr.length==1){
+                                isOneDirection=true;
+                                isPossibleBoth=true;
+                                type='RADIUS';
+                                direction=circleArr[0].A.x>MiddlePointPart.x?'X':'-X';
+                            }
+                            else{
+                                //Blind Holes : All actions in the same direction
+                                let tempArr=circleArr.filter(e=>{return e.A.x>MiddlePointPart.x});
+                                if(tempArr.length==circleArr.length || tempArr.length==0){
+                                    isOneDirection=true;
+                                    isPossibleBoth=false;
+                                    type='BHOLE';
+                                    direction=circleArr[0].A.x>MiddlePointPart.x?'X':'-X';
+                                }
+                                //Pass Holes  : Actions with diffrent directions
+                                else{
+                                 maxRadius=Math.max(...circleArr.map(o => o.Radius));
+                                    let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});                                   
+                                    if(MaxRadiusArr.length>1){
+                                        let testArr=MaxRadiusArr.filter(e=>{return e.A.x>MiddlePointPart.x});
+                                        if(testArr.length==circleArr.length || testArr.length==0){
+                                            isOneDirection=false;
+                                            isPossibleBoth=false;
+                                            type='OTHER';
+                                            direction=MaxRadiusArr[0].A.x>MiddlePointPart.x?'X':'-X';
+                                            // OTHER not possible : All Max Radiuses in same direction
+                                        }
+                                        else{
+                                            isOneDirection=false;
+                                            isPossibleBoth=true;
+                                            type='HOLE';
+                                            direction=MaxRadiusArr[0].A.x>MiddlePointPart.x?'X':'-X';
+                                             //Hole - possible : Max Radiuses in diffrent direction
+                                        }
+                                    }
+                                    else{
+                                        isOneDirection=false; 
+                                        isPossibleBoth=false;
+                                        type='CBOR';
+                                        direction=MaxRadiusArr[0].A.x>MiddlePointPart.x?'X':'-X';
+                                            //CBOR not possible : One Max Radiuse so direction will be by it.
+                                    } }
+                                }
+                            }
+                        }
                     else{
                         if (circelObj.AbsulteAxisB=='Y') {
                             newArr = docs.filter(function (e) {
                                 return e.A.x === x && e.A.z === z;
                             });
+
+                            if(newArr.length>0){
+                                let circleArr=newArr;
+                                      
+                            if(circleArr.length==1){
+                            isOneDirection=true;
+                            isPossibleBoth=true;
+                            type='RADIUS';
+                            direction=circleArr[0].A.y>MiddlePointPart.y?'Y':'-Y';
+                        }
+                        else{
+                            //Blind Holes : All actions in the same direction
+                            let tempArr=circleArr.filter(e=>{return e.A.y>MiddlePointPart.y});
+                            if(tempArr.length==circleArr.length || tempArr.length==0){
+                                isOneDirection=true;
+                                isPossibleBoth=false;
+                                type='BHOLE';
+                                direction=circleArr[0].A.y>MiddlePointPart.y?'Y':'-Y';
+                            }
+                            //Pass Holes  : Actions with diffrent directions
+                            else{
+                                 maxRadius=Math.max(...circleArr.map(o => o.Radius));
+                                let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});                                   
+                                if(MaxRadiusArr.length>1){
+                                    let testArr=MaxRadiusArr.filter(e=>{return e.A.y>MiddlePointPart.y});
+                                    if(testArr.length==circleArr.length || testArr.length==0){
+                                        isOneDirection=false;
+                                        isPossibleBoth=false;
+                                        type='OTHER';
+                                        direction=MaxRadiusArr[0].A.y>MiddlePointPart.y?'Y':'-Y';
+                                        // OTHER not possible : All Max Radiuses in same direction
+                                    }
+                                    else{
+                                        isOneDirection=false;
+                                        isPossibleBoth=true;
+                                        type='HOLE';
+                                        direction=MaxRadiusArr[0].A.y>MiddlePointPart.y?'Y':'-Y';
+                                         //Hole - possible : Max Radiuses in diffrent direction
+                                    }
+                                }
+                                else{
+                                    isOneDirection=false; 
+                                    isPossibleBoth=false;
+                                    type='CBOR';
+                                    direction=MaxRadiusArr[0].A.y>MiddlePointPart.y?'Y':'-Y';
+                                    //CBOR not possible : One Max Radiuse so direction will be by it.
+                                } }
+                            }
+                        }
                         
                         }
                         else{
@@ -262,163 +682,344 @@ const CreateFeat=(circelObj,pn,index)=>
                                 newArr = docs.filter(function (e) {
                                     return e.A.y === y && e.A.x === x;
                                 });
-                            
+                                if(newArr.length>0){
+                                    let circleArr=newArr;
+                                
+                                if(circleArr.length==1){
+                                    isOneDirection=true;
+                                    isPossibleBoth=true;
+                                    type='RADIUS';
+                                    direction=circleArr[0].A.z>MiddlePointPart.z?'Z':'-Z';
+                                }
+                                else{
+                                    //Blind Holes : All actions in the same direction
+                                    let tempArr=circleArr.filter(e=>{return e.A.z>MiddlePointPart.z});
+                                    if(tempArr.length==circleArr.length || tempArr.length==0){
+                                        isOneDirection=true;
+                                        isPossibleBoth=false;
+                                        type='BHOLE';
+                                        direction=circleArr[0].A.z>MiddlePointPart.z?'Z':'-Z';
+                                    }
+                                    //Pass Holes  : Actions with diffrent directions
+                                    else{
+                                        maxRadius=Math.max(...circleArr.map(o => o.Radius));
+                                        let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});                                   
+                                        if(MaxRadiusArr.length>1){
+                                            let testArr=MaxRadiusArr.filter(e=>{return e.A.z>MiddlePointPart.z});
+                                            if(testArr.length==circleArr.length || testArr.length==0){
+                                                isOneDirection=false;
+                                                isPossibleBoth=false;
+                                                type='OTHER';
+                                                direction=MaxRadiusArr[0].A.z>MiddlePointPart.z?'Z':'-Z';
+                                                // OTHER not possible : All Max Radiuses in same direction
+                                            }
+                                            else{
+                                                isOneDirection=false;
+                                                isPossibleBoth=true;
+                                                type='HOLE';
+                                                direction=MaxRadiusArr[0].A.z>MiddlePointPart.z?'Z':'-Z';
+                                                //Hole - possible : Max Radiuses in diffrent direction
+                                            }
+                                        }
+                                        else{
+                                            isOneDirection=false; 
+                                            isPossibleBoth=false;
+                                            type='CBOR';
+                                            direction=MaxRadiusArr[0].A.z>MiddlePointPart.z?'Z':'-Z';
+                                            //CBOR not possible : One Max Radiuse so direction will be by it.
+                                            } 
+                                        }
+                                    }
+                                }                            
                             }
                         
-                        }
+                         }
                     }
                 }
-
-                if(newArr.length>0){
-                    let type=CalcCoCircleType(newArr);
-                    let DirectionsAxis = CalcFeatsDirection(newArr);
-                    if(DirectionsAxis!=null){
                         var feat = new Feat({
                             PN:pn,
+                            Index:index,
                             circels: newArr,
-                            AxisB: DirectionsAxis,
+                            type:type,
+                            AxisB: direction,
                             AbsulteAxisB:circelObj.AbsulteAxisB,
                             AbsulteAxisC:circelObj.AbsulteAxisC,
-                            radius: circelObj.Radiuss,
                             RepreCount: newArr.length,
-                            type:type,
                             IsComplex:circelObj.IsComplex,
-                            Index:index,
+                            MaxRadius:maxRadius,
+                            IsPossibleAbsDirection:isPossibleBoth,
+
                         });
                         newArr.map((doc) => passCircelArr.push(doc._id.toString()));
                         resolve(feat);
-                    }
-                    newArr.map((doc) => passCircelArr.push(doc._id.toString()));
-                    resolve(null);
-                }
             }
-            else{
-                resolve(null);
-        
-            }
+    
         }
    
 });
 
-//(02-2)
-function CalcFeatsDirection(circlesArr){
 
-    let firstCircle=circlesArr[0];
-    let AbsAxis=firstCircle.AbsulteAxisB;
-    let maxVal=0;
-    let PrimeryCircle=firstCircle;
+// //(02-1)
+// const CreateFeat=(circelObj,pn,index,bounding)=>
+//     new Promise(async resolve=>{
+//     const docs =await Circel.find({ PN:pn,AbsulteAxisB: circelObj.AbsulteAxisB}).exec();
+    
+//     if(docs.length==0) resolve(null);
+//     else{
+//             var y = circelObj.A.y;
+//             var x = circelObj.A.x;
+//             var z = circelObj.A.z;
+//             var id = circelObj._id.toString();
+//             let AbsAxis=circelObj.AbsulteAxisB;
+//             let isOneDirection;
+//             let isPossibleBoth;
+//             let maxRadius;
+//             let type;
+//             let direction;
+//             let MiddlePointPart=bounding.MiddlePoint;
 
-    if(firstCircle.IsComplex==true){
-        PrimeryCircle=firstCircle;
-        let maxRadius=PrimeryCircle.Radius;
+//             var newArr = [];
+//             if (passCircelArr.includes(id)) resolve(null);
+            
+//             else {
+//                 if(circelObj.IsComplex==true){
+//                     //NEED TO IMPLEMENT BETTER
+//                     newArr = docs.filter(function (e) {
+//                         return e.A.y === y && e.A.z === z || e.A.x === x && e.A.z === z || e.A.y === y && e.A.x === x;
+//                     });
 
-            for(el of circlesArr){
-                if(el.Radius>=maxRadius){
-                    PrimeryCircle=el;
-                    maxRadius=el.Radius;
-                }       
-            }            
-     }
+//                     if(newArr.length>0){
 
-    else{
-        for(el of circlesArr){
-            //ABSAxisB= X
-            if(AbsAxis=='X'){
-                if(Math.abs(el.A.x)>maxVal)
-                {
-                    PrimeryCircle=el;
-                    maxVal=Math.abs(el.A.x);
-                }
-            }
+//                         let circleArr=newArr;
+//                         maxRadius=Math.max(...circleArr.map(o => o.Radius));
+//                         let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});      
+//                         isOneDirection=false; 
+//                         isPossibleBoth=false;
+//                         type='COMPLEX';
+//                         direction=MaxRadiusArr[0].AxisB;
+//                     }
+//                 }
+//                 else{
+//                     if (circelObj.AbsulteAxisB=='X') {
+//                         newArr = docs.filter(function (e) {
+//                             return e.A.y === y && e.A.z === z;
+//                         });
+//                         if(newArr.length>0){
+//                             let circleArr=newArr;
+                   
+//                             if(circleArr.length==1){
+//                                 isOneDirection=true;
+//                                 isPossibleBoth=true;
+//                                 type='RADIUS';
+//                                 direction=circleArr[0].A.x>0?'X':'-X';
+//                             }
+//                             else{
+//                                 //Blind Holes : All actions in the same direction
+//                                 let tempArr=circleArr.filter(e=>{return e.A.x>0});
+//                                 if(tempArr.length==circleArr.length || tempArr.length==0){
+//                                     isOneDirection=true;
+//                                     isPossibleBoth=false;
+//                                     type='BHOLE';
+//                                     direction=circleArr[0].A.x>0?'X':'-X';
+//                                 }
+//                                 //Pass Holes  : Actions with diffrent directions
+//                                 else{
+//                                  maxRadius=Math.max(...circleArr.map(o => o.Radius));
+//                                     let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});                                   
+//                                     if(MaxRadiusArr.length>1){
+//                                         let testArr=MaxRadiusArr.filter(e=>{return e.A.x>0});
+//                                         if(testArr.length==circleArr.length || testArr.length==0){
+//                                             isOneDirection=false;
+//                                             isPossibleBoth=false;
+//                                             type='OTHER';
+//                                             direction=MaxRadiusArr[0].A.x>0?'X':'-X';
+//                                             // OTHER not possible : All Max Radiuses in same direction
+//                                         }
+//                                         else{
+//                                             isOneDirection=false;
+//                                             isPossibleBoth=true;
+//                                             type='HOLE';
+//                                             direction=MaxRadiusArr[0].A.x>0?'X':'-X';
+//                                              //Hole - possible : Max Radiuses in diffrent direction
+//                                         }
+//                                     }
+//                                     else{
+//                                         isOneDirection=false; 
+//                                         isPossibleBoth=false;
+//                                         type='CBOR';
+//                                         direction=MaxRadiusArr[0].A.x>0?'X':'-X';
+//                                             //CBOR not possible : One Max Radiuse so direction will be by it.
+//                                     } }
+//                                 }
+//                             }
+//                         }
+//                     else{
+//                         if (circelObj.AbsulteAxisB=='Y') {
+//                             newArr = docs.filter(function (e) {
+//                                 return e.A.x === x && e.A.z === z;
+//                             });
 
-            //ABSAxisB= Y
-            if(AbsAxis=='Y'){
-                if(Math.abs(el.A.y)>maxVal)
-                {
-                    PrimeryCircle=el;
-                    maxVal=Math.abs(el.A.y);
+//                             if(newArr.length>0){
+//                                 let circleArr=newArr;
+                                      
+//                         if(AbsAxis=='Y'){
+//                             if(circleArr.length==1){
+//                             isOneDirection=true;
+//                             isPossibleBoth=true;
+//                             type='RADIUS';
+//                             direction=circleArr[0].A.y>0?'Y':'-Y';
+//                         }
+//                         else{
+//                             //Blind Holes : All actions in the same direction
+//                             let tempArr=circleArr.filter(e=>{return e.A.y>0});
+//                             if(tempArr.length==circleArr.length || tempArr.length==0){
+//                                 isOneDirection=true;
+//                                 isPossibleBoth=false;
+//                                 type='BHOLE';
+//                                 direction=circleArr[0].A.y>0?'Y':'-Y';
+//                             }
+//                             //Pass Holes  : Actions with diffrent directions
+//                             else{
+//                                  maxRadius=Math.max(...circleArr.map(o => o.Radius));
+//                                 let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});                                   
+//                                 if(MaxRadiusArr.length>1){
+//                                     let testArr=MaxRadiusArr.filter(e=>{return e.A.y>0});
+//                                     if(testArr.length==circleArr.length || testArr.length==0){
+//                                         isOneDirection=false;
+//                                         isPossibleBoth=false;
+//                                         type='OTHER';
+//                                         direction=MaxRadiusArr[0].A.y>0?'Y':'-Y';
+//                                         // OTHER not possible : All Max Radiuses in same direction
+//                                     }
+//                                     else{
+//                                         isOneDirection=false;
+//                                         isPossibleBoth=true;
+//                                         type='HOLE';
+//                                         direction=MaxRadiusArr[0].A.y>0?'Y':'-Y';
+//                                          //Hole - possible : Max Radiuses in diffrent direction
+//                                     }
+//                                 }
+//                                 else{
+//                                     isOneDirection=false; 
+//                                     isPossibleBoth=false;
+//                                     type='CBOR';
+//                                     direction=MaxRadiusArr[0].A.y>0?'Y':'-Y';
+//                                     //CBOR not possible : One Max Radiuse so direction will be by it.
+//                                 } }
+//                             }
+//                     }
+//                 }
+                        
+//                         }
+//                         else{
+//                             if (circelObj.AbsulteAxisB=='Z') {
+//                                 newArr = docs.filter(function (e) {
+//                                     return e.A.y === y && e.A.x === x;
+//                                 });
+//                                 if(newArr.length>0){
+//                                     let circleArr=newArr;
+                                
+                                          
+//                         if(AbsAxis=='Z'){
+//                             if(circleArr.length==1){
+//                                 isOneDirection=true;
+//                                 isPossibleBoth=true;
+//                                 type='RADIUS';
+//                                 direction=circleArr[0].A.z>0?'Z':'-Z';
+//                             }
+//                             else{
+//                                 //Blind Holes : All actions in the same direction
+//                                 let tempArr=circleArr.filter(e=>{return e.A.z>0});
+//                                 if(tempArr.length==circleArr.length || tempArr.length==0){
+//                                     isOneDirection=true;
+//                                     isPossibleBoth=false;
+//                                     type='BHOLE';
+//                                     direction=circleArr[0].A.z>0?'Z':'-Z';
+//                                 }
+//                                 //Pass Holes  : Actions with diffrent directions
+//                                 else{
+//                                      maxRadius=Math.max(...circleArr.map(o => o.Radius));
+//                                     let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});                                   
+//                                     if(MaxRadiusArr.length>1){
+//                                         let testArr=MaxRadiusArr.filter(e=>{return e.A.z>0});
+//                                         if(testArr.length==circleArr.length || testArr.length==0){
+//                                             isOneDirection=false;
+//                                             isPossibleBoth=false;
+//                                             type='OTHER';
+//                                             direction=MaxRadiusArr[0].A.z>0?'Z':'-Z';
+//                                             // OTHER not possible : All Max Radiuses in same direction
+//                                         }
+//                                         else{
+//                                             isOneDirection=false;
+//                                             isPossibleBoth=true;
+//                                             type='HOLE';
+//                                             direction=MaxRadiusArr[0].A.z>0?'Z':'-Z';
+//                                              //Hole - possible : Max Radiuses in diffrent direction
+//                                         }
+//                                     }
+//                                     else{
+//                                         isOneDirection=false; 
+//                                         isPossibleBoth=false;
+//                                         type='CBOR';
+//                                         direction=MaxRadiusArr[0].A.z>0?'Z':'-Z';
+//                                         //CBOR not possible : One Max Radiuse so direction will be by it.
+//                                         } 
+//                                     }
+//                                 }
+//                             }
+                            
+//                         }
+                            
+//                     }
+                        
+//                         }
+//                     }
+//                 }
+//                         var feat = new Feat({
+//                             PN:pn,
+//                             Index:index,
+//                             circels: newArr,
+//                             type:type,
+//                             AxisB: direction,
+//                             AbsulteAxisB:circelObj.AbsulteAxisB,
+//                             AbsulteAxisC:circelObj.AbsulteAxisC,
+//                             RepreCount: newArr.length,
+//                             IsComplex:circelObj.IsComplex,
+//                             MaxRadius:maxRadius,
+//                             IsPossibleAbsDirection:isPossibleBoth,
 
-                } 
-            }
-
-            //ABSAxisB= Z
-            if(AbsAxis=='Z'){
-                if(Math.abs(el.A.z)>maxVal)
-                {
-                    PrimeryCircle=el;
-                    maxVal=Math.abs(el.A.z);
-
-                }
-            }
-        }
-    }
-    if(PrimeryCircle!=null){
-        return PrimeryCircle.AxisB;
-    }
-    else{
-        console.log("#Attention :Null");
-        console.log("AbsAxis: "+AbsAxis);
-        return null;
-    }
-}
-
-
-
-// //(02-2)
-// function CalcFeatsDirection(circlesArr){
-
-//     const allMap = new Map();
-//     let maxVal=0;
-//     let maxKey='';
-
-//     for(el of circlesArr){
-//         if(!allMap.has(el.AxisB)){
-//             allMap.set(el.AxisB,1);
-//         }
-//         else{
-//             let val=allMap.get(el.AxisB);
-//             allMap.delete(el.AxisB);
-//             allMap.set(el.AxisB,val+1);
-//         }
-//     }
-//     if(allMap.size>1){        
-//         for(el of allMap){
-//             if(el[1]>maxVal){
-//                 maxVal=el[1];
-//                 maxKey=el[0];
+//                         });
+//                         newArr.map((doc) => passCircelArr.push(doc._id.toString()));
+//                         resolve(feat);
 //             }
-//         }    
-//     }
-//     const mapIter = allMap.entries();
+    
+//         }
+   
+// });
 
-//     if(maxKey == '') maxKey=mapIter.next().value[0];
-        
-//     if(maxKey==null) console.log("Null");
-//     return maxKey;
-
-// }
 
 //(02-3)
 const CreateDirectionObject=(s,pn,tempList)=>
 new Promise(async resolve=>{
 
-let absAxis='';
-if(s == 'X' || s == '-X') absAxis='X';
-if(s == 'Y' || s == '-Y') absAxis='Y';
-if(s == 'Z' || s == '-Z') absAxis='Z';
-if(absAxis == '') {
-    absAxis='Complex';
-}
 
-const direction=new Direction({
-    PN:pn,
-    DirectionAxis:s,
-    Features:tempList,
-    AbsAxis:absAxis,
-    NumberOfFeat:tempList.length,
-});
+    let absAxis='';
+    if(s == 'X' || s == '-X') absAxis='X';
+    if(s == 'Y' || s == '-Y') absAxis='Y';
+    if(s == 'Z' || s == '-Z') absAxis='Z';
+    if(absAxis == '') {
+        absAxis='Complex';
+    }
 
-resolve(direction);
+    const direction=new Direction({
+        PN:pn,
+        DirectionAxis:s,
+        Features:tempList,
+        AbsAxis:absAxis,
+        NumberOfFeat:tempList.length,
+    });
+
+    resolve(direction);
 
 });
 
@@ -570,6 +1171,8 @@ function GetGenCircelAxisC(circel) {
 
 }
 
+
+//Need To Change
 function CalcCoCircleType(circlesArr){
     let type="";
     if(circlesArr.length==2){ 
@@ -605,5 +1208,6 @@ module.exports = {
     GetFeatArr,
     GetDirectionsArr,
     GetMSPart,
+    GetBounding,
     ClearDB,
 };

@@ -24,7 +24,6 @@ const circelSchema = Base.discriminator("Circel",
         C: {
             type: Object
         },
-        
         AxisB: {
             type: String,
         },
