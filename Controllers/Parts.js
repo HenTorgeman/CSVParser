@@ -28,29 +28,24 @@ const Start = async (req, res, next) => {
     let minutes = date_ob.getMinutes();
     let seconds = date_ob.getSeconds();
     console.log("##---START----- : "+ hours + ":" + minutes +":"+seconds);
-    // for(let i=0;i<4;i++){
-    //     let el=table[i];
     for(el of table){      
         let row=el.split(",");
         let pn=row[colPartNumber];
         if(pn.toString().trim()==='Part' || pn.toString().trim()===''){
-            // Its Title
         }
-        else{
-            // Its Line
-    
+        else{    
             console.log("## Calculate data for.. "+ pn +"....."+index+"/"+table.length);
             let path=row[colPath];
             let originMs=row[colMsOrigin];
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             partsName.push(pn);
+
             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
             const bounding=await CalcController.GetBounding(circlesArr,pn,partData);
             saveAll(circlesArr);
             const featsArr = await CalcController.GetFeatArr(circlesArr,pn,bounding);
             saveAll(featsArr);
             const directionArr = await CalcController.GetDirectionsArr(featsArr,pn,bounding);
-
             saveAll(directionArr);
 
             //## Calc how many feats in part.
@@ -108,43 +103,6 @@ const ClearDB = async (req, res, next) => {
     res.status(200).send("ok");
 }
 
-const IsIncludeButtom=(directionArr)=>
-new Promise(async resolve =>{
-    
-    let DirectionX=0;
-    let DirectionY=0;
-    let DirectionZ=0;
-    let flag=true;
-
-    for(d of directionArr){
-        if(d.DirectionAxis =='X' || d.DirectionAxis =='-X') DirectionX++;
-        if(d.DirectionAxis =='Y' || d.DirectionAxis =='-Y') DirectionY++;
-        if(d.DirectionAxis =='Z' || d.DirectionAxis =='-Z') DirectionZ++;
-    }
-    if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
-        flag= false;
-    }
-    resolve(flag);
-});
-async function IsIncludeNegative(directsionArr){
-    
-    let directions=['X','Y','Z'];
-    let DirectionX=0;
-    let DirectionY=0;
-    let DirectionZ=0;
-    let flag=true;
-
-    for(d of directionArr){
-        if(d =='X' || d =='-X') DirectionX++;
-        if(d =='Y' || d =='-Y') DirectionY++;
-        if(d =='Z' || d =='-Z') DirectionZ++;
-    }
-    if(DirectionX<2 && DirectionY<2 && DirectionZ<2){
-        flag= false;
-    }
-
-    return flag;
-}
 function GetAsString(directionArr){
     
     let start='[ ';
