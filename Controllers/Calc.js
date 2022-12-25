@@ -20,7 +20,8 @@ const GetCirclesArr=(tableFile,pn)=>
         return r[2]==="CIRCLE";
     });
 
-    for(el of filteredArr){        
+    for(el of filteredArr){       
+
         var row = el.split(" ");
         const response= await CreateNewCircelAction(row, tableFile, pn);
             if (response != null) {
@@ -38,7 +39,8 @@ const GetCirclesArr=(tableFile,pn)=>
                 else{
                     //Not cirecle action.
                 }
-            }
+        }
+
     }
     resolve(circleArr);
 });
