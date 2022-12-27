@@ -43,7 +43,7 @@ const GetCirclesArr=(tableFile,pn)=>
     resolve(circleArr);
 });
 
-const GetBounding=(circleArr,pn,fullTable)=>
+const GetBounding=(pn,fullTable,w,l,h)=>
 
     new Promise(async resolve =>{
 
@@ -51,7 +51,7 @@ const GetBounding=(circleArr,pn,fullTable)=>
         let arrayY=[];
         let arrayZ=[];
 
-        //Option1 :By General area
+        // # Reading all x y z from step file ----------
         let filteredArr=fullTable.filter(e=>{
             let r=e.split(" ");
             return r[2]==="CARTESIAN_POINT";
@@ -67,124 +67,152 @@ const GetBounding=(circleArr,pn,fullTable)=>
             arrayZ.push(z);
         }
         
-        let MaxX= parseFloat(Math.max(...arrayX));
-        let MinX= parseFloat(Math.min(...arrayX));
-        let MaxY= parseFloat(Math.max(...arrayY));
-        let MinY= parseFloat(Math.min(...arrayY));
-        let MaxZ= parseFloat(Math.max(...arrayZ));
-        let MinZ= parseFloat(Math.min(...arrayZ));
-        
+        let MaxXStep= parseFloat(Math.max(...arrayX));
+        let MinXStep= parseFloat(Math.min(...arrayX));
+        let MaxYStep= parseFloat(Math.max(...arrayY));
+        let MinYStep= parseFloat(Math.min(...arrayY));
+        let MaxZStep= parseFloat(Math.max(...arrayZ));
+        let MinZStep= parseFloat(Math.min(...arrayZ));
 
-        //-----------------------Data Calculation
-        let xRange=0;
-        let yRange=0;
-        let zRange=0;
+        let areaX=MaxXStep-MinXStep;
+        let areaY=MaxYStep-MinYStep;
+        let areaZ=MaxZStep-MinZStep;
 
+        // # Reading all x y z from step file ----------
 
-        if(MaxX+MinX==0)
-        {   xRange=Math.abs(MaxX)+Math.abs(MinX);
-        }
-        else
-        {
-            xRange= MaxX-MinX;
-        }
+        let MaxY,MinY,MaxX,MinX,MaxZ,MinZ,xTotal,yTotal,zTotal;
+        let tempArray=[];
 
-        if(MaxY+MinY==0)
-        {    yRange=Math.abs(MaxY)+Math.abs(MinY);}
-        else{
-            yRange= MaxY-MinY;
-        }
+        // # Changing the w h l to the real step x y z ----------
 
-        if(MaxZ+MinZ==0)
-        {    zRange=Math.abs(MaxZ)+Math.abs(MinZ);}
-        else{
-            zRange= MaxZ-MinZ;
+        if(areaY>areaX && areaY>areaZ){
+             MaxY=MaxXStep
+             MinY=MinXStep;
+             yTotal=l;
 
-        }
+             tempArray=arrayX;
+             arrayX=arrayY;
+            
 
-        let areaX=Math.abs(xRange);
-        let areaY=Math.abs(yRange);
-        let areaZ=Math.abs(zRange);
+            if(areaX>areaZ){
+                 MaxX=MaxYStep;
+                 MinX=MinYStep;
+                 MaxZ=MaxZStep;
+                 MinZ=MinZStep;
+                 xTotal=w;
+                 zTotal=h;
 
-        let w="";
-        let h="";
-        let l="";
-        let wVal=0;
-        let hVal=0;
-        let lVal=0;
-        
-        //Calculating whos is W H L.
-        if(areaX>=areaY&&areaX>=areaZ){
-            l='X';
-            lVal=areaX;
-
-            if(areaY>=areaZ)
-            {   w='Y';
-                wVal=areaY;
-                h='Z';
-                hVal=areaZ;
+                 arrayY=tempArray;
+                 arrayZ=arrayZ;
             }
             else{
-                w='Z';
-                wVal=areaZ;
-                h='Y';
-                hVal=areaY;
+                 MaxZ=MaxYStep;
+                 MinZ=MinYStep;
+                 MaxX=MaxZStep;
+                 MinX=MinZStep;
+                 zTotal=w;
+                 xTotal=h;
 
+                 arrayY=arrayZ;
+                 arrayX=tempArray;
             }
         }
         else{
-            if(areaY>=areaX&&areaY>=areaZ){
-                l='Y';
-                lVal=areaY;
+            if(areaZ>areaX && areaZ>areaY){
+                 MaxZ=MaxXStep
+                 MinZ=MinXStep;
+                 zTotal=l;
 
-                if(areaX>=areaZ)
-                {   w='X';
-                    wVal=areaX;
-                    h='Z';
-                    hVal=areaZ;
+
+                 tempArray=arrayX;
+                 arrayX=arrayZ;
+
+                if(areaY>areaX){
+                     MaxY=MaxYStep;
+                     MinY=MinYStep;
+                     MaxX=MaxZStep;
+                     MinX=MinZStep;
+                     yTotal=w;
+                     xTotal=h;
+
+                     arrayY=arrayY;
+                     arrayZ=tempArray;
                 }
                 else{
-                    w='Z';
-                    wVal=areaZ;
-                    h='X';
-                    hVal=areaX;
+                     MaxX=MaxYStep;
+                     MinX=MinYStep;
+                     MaxY=MaxZStep;
+                     MinY=MinZStep;
+                     xTotal=w;
+                     yTotal=h;
+
+                     arrayY=tempArray;
+                     arrayZ=arrayY;
 
                 }
+
+            
+
             }
             else{
-                    l='Z';
-                    lVal=areaZ;
+                if(areaX>areaZ && areaX>areaY)
+                    {
+                         MaxX=MaxXStep
+                         MinX=MinXStep;
+                         xTotal=l;
 
-                    if(areaX>=areaY)
-                    {   w='X';
-                        wVal=areaX;
+                        if(areaY>areaZ){
+                             MaxY=MaxYStep;
+                             MinY=MinYStep;
+                             MaxZ=MaxZStep;
+                             MinZ=MinZStep;
+                             yTotal=w;
+                             zTotal=h;
+                             
+                        }
+                        else{
+                             MaxZ=MaxYStep;
+                             MinZ=MinYStep;
+                             MaxY=MaxZStep;
+                             MinY=MinZStep;
+                             zTotal=w;
+                             yTotal=h;
 
-                        h='Y';
-                        hVal=areaY;
-
-                    }
-                    else{
-                        w='Y';
-                        wVal=areaY;
-                        h='X';
-                        hVal=areaX;
-                    }
+                             tempArray=arrayY;
+                             arrayY=arrayZ;
+                             arrayZ=tempArray;
+                        }
                 }
+            }
         }
 
-        let MiddleX=MaxX<0 ? xRange/2*(-1): xRange/2;
-        let MiddleY=MaxY<0 ? yRange/2*(-1): yRange/2;
-        let MiddleZ=MaxZ<0 ? zRange/2*(-1): zRange/2;
+        // # Changing the w h l to the real step x y z ------
 
-        MiddleX = MaxX+MinX==0? 0: MiddleX;
-        MiddleY = MaxY+MinY== 0 ? 0: MiddleY;    
-        MiddleZ = MaxZ+MinZ== 0 ? 0: MiddleZ;
+
+        // # Calculating real middlePoint --------
+        
+        let MiddleX=MaxX<0 ? xTotal/2*(-1): xTotal/2;
+        let MiddleY=MaxY<0 ? yTotal/2*(-1): yTotal/2;
+        let MiddleZ=MaxZ<0 ? zTotal/2*(-1): zTotal/2;
+
+        MiddleX = MaxX+MinX== 0 ||  MaxX+MinX==1 || MaxX+MinX==-1? 0: MiddleX;
+        MiddleY = MaxY+MinY== 0 || MaxY+MinY==1 || MaxY+MinY==-1? 0: MiddleY;    
+        MiddleZ = MaxZ+MinZ== 0 || MaxZ+MinZ==1 || MaxZ+MinZ==-1? 0: MiddleZ;
+
+        let positiveArrayX=arrayX.filter(e=>{return e>0});
+        MiddleX=positiveArrayX.length>arrayX.length/2? MiddleX:MiddleX*(-1);
+        let positiveArrayY=arrayY.filter(e=>{return e>0});
+        MiddleY=positiveArrayY.length>arrayY.length/2? MiddleY:MiddleY*(-1);
+        let positiveArrayZ=arrayZ.filter(e=>{return e>0});
+        MiddleZ=positiveArrayZ.length>arrayZ.length/2? MiddleZ:MiddleZ*(-1);
 
         const point= new Point({
             x:MiddleX,
             y:MiddleY,
             z:MiddleZ,
         });
+
+        // # Calculating real middlePoint --------
 
         const bounding= new Bounding({
             PN:pn,
@@ -198,9 +226,7 @@ const GetBounding=(circleArr,pn,fullTable)=>
             W:w,
             L:l,
             H:h,
-            Hval:hVal,
-            Wval:wVal,
-            Lval:lVal
+            High:h
         });
 
     resolve(bounding);
@@ -228,7 +254,7 @@ const GetDirectionsArr=(faetArr,pn,bounding)=>
 new Promise(async resolve =>{
     const Directions=[];
     const DirectionsString=["X","-X","Z","-Z","Y","-Y"];
-    const DirectionStringSet=[];
+    const DirectionStringSet=[];    
     let FeatList = faetArr;
     for(s of DirectionsString){
 
@@ -236,6 +262,8 @@ new Promise(async resolve =>{
         let directionObj=await CreateDirectionObject(s,pn,templist);
         Directions.push(directionObj);
         DirectionStringSet.push(directionObj.DirectionAxis);
+        console.log('directionObj.DirectionAxis');
+        console.log(directionObj.DirectionAxis);
         let filltered = FeatList.filter((item) => item.AxisB != s);
         FeatList = filltered;
     }
@@ -245,9 +273,12 @@ new Promise(async resolve =>{
         for(f of FeatList){
             if(!DirectionStringSet.includes(f.AxisB)){
                 let templist=FeatList.filter((item) => item.AxisB== f.AxisB);
-                let directionObj=await CreateDirectionObject(f.AxisB,pn,templist);
+                let directionObj=await CreateABnormalDirectionObject(f,pn,templist);
+                
                 Directions.push(directionObj);
                 DirectionStringSet.push(directionObj.DirectionAxis);
+                console.log('directionObj.DirectionAxis');
+                console.log(directionObj.DirectionAxis);
                 let filltered= FeatList.filter((item) => item.AxisB != f.AxisB);
                 FeatList=filltered;
             }
@@ -260,8 +291,9 @@ new Promise(async resolve =>{
     const filltered= Directions.filter((item) => item.NumberOfFeat>0);
 
     // ## Buttom to Machine
-    let positiveH=bounding.H;
-    let negativeH='-'+bounding.H;
+
+    let positiveH='Z';
+    let negativeH='-Z';
     let emptyList=[];
 
     if(filltered.filter((item) => item.DirectionAxis==negativeH.toString()).length==0){
@@ -272,12 +304,13 @@ new Promise(async resolve =>{
         let directionObj=await CreateDirectionObject(positiveH,pn,emptyList);
         filltered.push(directionObj);
     }
+    
     // ## High Sides to Machine
-    if(bounding.Hval>50){
-        let positiveW=bounding.W;
-        let negativeW='-'+bounding.W;
-        let positiveL=bounding.L;
-        let negativeL='-'+bounding.L;
+    if(bounding.High>50){
+        let positiveW='Y';
+        let negativeW='-Y';
+        let positiveL='X';
+        let negativeL='-X';
 
         if(filltered.filter((item) => item.DirectionAxis==positiveW.toString()).length==0){
             let directionObj=await CreateDirectionObject(positiveW,pn,emptyList);
@@ -470,7 +503,6 @@ const CreateFeat=(circelObj,pn,index,bounding)=>
                     });
 
                     if(newArr.length>0){
-
                         let circleArr=newArr;
                         maxRadius=Math.max(...circleArr.map(o => o.Radius));
                         let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});      
@@ -696,6 +728,20 @@ new Promise(async resolve=>{
 
 });
 
+//(02-3)
+const CreateABnormalDirectionObject=(feat,pn,tempList)=>
+new Promise(async resolve=>{
+    const direction=new Direction({
+        PN:pn,
+        DirectionAxis:feat.AxisB,
+        Features:tempList,
+        AbsAxis:feat.AbsulteAxisB,
+        NumberOfFeat:tempList.length,
+    });
+
+    resolve(direction);
+
+});
 //(03-2)
 const GetMSPart=(coCirclesArr,pn)=>
 new Promise(async resolve =>{
@@ -816,7 +862,7 @@ function GetGenCircelAxisB(circel) {
         }
     }
     if(axis == "") {
-        axis = "Complex"+ '| X '+Math.abs(circel.B.x)+' | Y '+Math.abs(circel.B.y)+' | Z '+Math.abs(circel.B.z);
+        axis = '| X '+Math.abs(circel.B.x)+' | Y '+Math.abs(circel.B.y)+' | Z '+Math.abs(circel.B.z);
 
     }
     return axis;
@@ -843,8 +889,6 @@ function GetGenCircelAxisC(circel) {
     return axis;
 
 }
-
-
 
 //-------------------## DB
 const ClearDB = async (req, res, next) => {

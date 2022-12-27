@@ -6,14 +6,19 @@ var CalcController = require("./Calc");
 const fs = require("fs");
 const { Resolver } = require("dns");
 const { time } = require("console");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading/TG01-ScriptInput.csv'
+const Bounding = require("../Model/Bounding");
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/2-parts-ScriptInput.csv'
+
 const colPartNumber=0;
 const colPath=1;
 const colMsOrigin=3;
-const colMsToPrint=4;
+const colComplexity=4;
+const colH=7;
+const colW=6;
+const colL=5;
+
 
 const Start = async (req, res, next) => {
-
     console.log("## Reading file....");
     let data =fs.readFileSync(filePath, "utf8").split("\r\n");
     let table=data;
@@ -37,12 +42,17 @@ const Start = async (req, res, next) => {
             console.log("## Calculate data for.. "+ pn +"....."+index+"/"+table.length);
             let path=row[colPath];
             let originMs=row[colMsOrigin];
+            let complexity=row[colComplexity];
+            let w=row[colW];
+            let h=row[colH];
+            let l=row[colL];
+
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             partsName.push(pn);
-
             const circlesArr = await CalcController.GetCirclesArr(partData, pn);
-            const bounding=await CalcController.GetBounding(circlesArr,pn,partData);
             saveAll(circlesArr);
+            const bounding=await CalcController.GetBounding(pn,partData,w,l,h);
+            bounding.save();
             const featsArr = await CalcController.GetFeatArr(circlesArr,pn,bounding);
             saveAll(featsArr);
             const directionArr = await CalcController.GetDirectionsArr(featsArr,pn,bounding);
@@ -71,6 +81,7 @@ const Start = async (req, res, next) => {
                 OriginalMS:originMs,
                 FeatursNumber:totalFeats,
                 BoundingBox:bounding,
+                ComplexityLevel:complexity,
             });
             parts.push(part);
             index++;
@@ -91,6 +102,42 @@ const Start = async (req, res, next) => {
     res.status(200).send(obj);
 }
 
+const Print = async (req, res, next) => {
+
+
+const titles = ['PN','MS(o)','ComplexityLevel','L','W','H','','MS','MS Gap','Directions','KeyMachine','SetUps','Feats','MiddlePointX','MiddlePointY','MiddlePointZ'];
+const data=[];
+data.push(titles);
+const parts =await Part.find({}).exec();
+    
+    
+for(index in parts){
+    let p=parts[index];
+    let bound=p.BoundingBox;
+    console.log(p);
+    console.log(bound);
+
+    const dataRow=[p.PN,p.OriginalMS,p.ComplexityLevel,p.BoundingBox.L,p.BoundingBox.W,p.BoundingBox.H,' ',p.Directions.length,(p.OriginalMS-p.MS),p.directionString,'machine','setupsnumber',p.FeatursNumber,p.BoundingBox.MiddlePoint.x,p.BoundingBox.MiddlePoint.y,p.BoundingBox.MiddlePoint.z];
+    //  const dataRow=[p.PN,p.originMs,p.complexityLevel,'p.BoundingBox.H','p.BoundingBox.W','p.BoundingBox.L',p.directionString,'machine','setupsnumber',p.FeatursNumber,'p.BoundingBox.MiddlePoint.x','p.BoundingBox.MiddlePoint.y','p.BoundingBox.MiddlePoint.z',(p.OriginalMS-p.MS)];
+
+    data.push(dataRow);
+}
+
+const csvData = data.map(d => d.join(',')).join('\n');
+//'/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/10-parts-ScriptInput.csv'
+fs.writeFile('/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/ResultFile.csv', csvData, (error) => {
+// fs.writeFile('./ResultFile.csv', csvData, (error) => {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log('The CSV file was written successfully');
+  }
+});
+  
+    res.status(200).send(data);
+}
+
+
 async function saveAll(docArray){
     return Promise.all(docArray.map((doc) => doc.save()));
 }
@@ -99,7 +146,9 @@ const ClearDB = async (req, res, next) => {
     await Circel.deleteMany({});
     await Feat.deleteMany({});
     await Direction.deleteMany({});
+    await Bounding.deleteMany({});
     await Part.deleteMany({});
+
     res.status(200).send("ok");
 }
 
@@ -121,5 +170,6 @@ function GetAsString(directionArr){
 
 module.exports = {
     Start,
+    Print,
     ClearDB,
 };

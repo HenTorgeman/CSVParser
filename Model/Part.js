@@ -11,10 +11,6 @@ const PartSchema = new mongoose.Schema({
     FilePath: {
         type: String,
     },
-    boundingBox:{
-        type: Number,
-        default: 0,
-    },
     MS:{
         type: Number,
         default: 0,
@@ -35,6 +31,9 @@ const PartSchema = new mongoose.Schema({
     },
     BoundingBox:{
         type:Object
+    },
+    Machine:{
+        type:[Object],
     }
     
 });

@@ -34,17 +34,9 @@ const BoundingSchema = new mongoose.Schema({
     H:{
         type:String
     },
-    Wval:{
-        type:Number
-    },
-    Lval:{
-        type:Number
-    },
-    Hval:{
+    High:{
         type:Number
     }
-
-
     
 });
 module.exports = mongoose.model("Bounding", BoundingSchema);
