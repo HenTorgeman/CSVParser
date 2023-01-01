@@ -11,8 +11,8 @@ const KeyMachineSchema = new mongoose.Schema({
     SetUpsNumber:{
         type:Number
     },
-    AroundAxisNumber:{
-        type:Number
-    }
+    // AroundAxisNumber:{
+    //     type:Number
+    // }
 });
 module.exports = mongoose.model("KeyMachine", KeyMachineSchema);

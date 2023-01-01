@@ -2,12 +2,14 @@ const Part= require("../Model/Part");
 const Circel = require("../Model/Circel");
 const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
+const Machine = require("../Model/Machine");
+
 var CalcController = require("./Calc");
 const fs = require("fs");
-const { Resolver } = require("dns");
-const { time } = require("console");
+
 const Bounding = require("../Model/Bounding");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/2-parts-ScriptInput.csv'
+const { captureRejectionSymbol } = require("events");
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/10-parts-ScriptInput.csv'
 
 const colPartNumber=0;
 const colPath=1;
@@ -32,7 +34,10 @@ const Start = async (req, res, next) => {
     let hours = date_ob.getHours();
     let minutes = date_ob.getMinutes();
     let seconds = date_ob.getSeconds();
-    console.log("##---START----- : "+ hours + ":" + minutes +":"+seconds);
+
+
+    console.log("## Start : "+ hours + ":" + minutes +":"+seconds);
+    
     for(el of table){      
         let row=el.split(",");
         let pn=row[colPartNumber];
@@ -42,7 +47,8 @@ const Start = async (req, res, next) => {
             console.log("## Calculate data for.. "+ pn +"....."+index+"/"+table.length);
             let path=row[colPath];
             let originMs=row[colMsOrigin];
-            let complexity=row[colComplexity];
+            let complexity=parseInt(row[colComplexity]);
+
             let w=row[colW];
             let h=row[colH];
             let l=row[colL];
@@ -57,6 +63,17 @@ const Start = async (req, res, next) => {
             saveAll(featsArr);
             const directionArr = await CalcController.GetDirectionsArr(featsArr,pn,bounding);
             saveAll(directionArr);
+            const aroundAxisNumber = await CalcController.CalculateAroundAxisNumber(directionArr,pn,bounding);
+
+            const obj={
+                PN:pn,
+                directions:directionArr,
+                complexityLevel:complexity,
+                aroundAxis:aroundAxisNumber
+            }
+
+            const machineArr = await CalcController.CalculateKetMachineOptions(obj);
+            saveAll(machineArr);
 
             //## Calc how many feats in part.
             let totalFeats=0;
@@ -81,19 +98,24 @@ const Start = async (req, res, next) => {
                 OriginalMS:originMs,
                 FeatursNumber:totalFeats,
                 BoundingBox:bounding,
+                AroundAxisNumber:aroundAxisNumber,
                 ComplexityLevel:complexity,
+                MachineOptions:machineArr,
             });
             parts.push(part);
             index++;
         }
     }
     saveAll(parts);
-     date_ob = new Date();
-     hours = date_ob.getHours();
-     minutes = date_ob.getMinutes();
-     seconds = date_ob.getSeconds();
-    console.log("##---DONE----- : "+ hours + ":" + minutes +":"+seconds);
 
+    //## Print completion message
+    date_ob = new Date();
+    hours = date_ob.getHours();
+    minutes = date_ob.getMinutes();
+    seconds = date_ob.getSeconds();
+    console.log("## Done 😀: "+ hours + ":" + minutes +":"+seconds);
+
+    //## Print the postman message
     const obj={
         title:'Your mistake range is : ' + mistakeRange +' out of : '+parts.length,
         list:mistakeList
@@ -105,7 +127,7 @@ const Start = async (req, res, next) => {
 const Print = async (req, res, next) => {
 
 
-const titles = ['PN','MS(o)','ComplexityLevel','L','W','H','','MS','MS Gap','Directions','KeyMachine','SetUps','Feats','MiddlePointX','MiddlePointY','MiddlePointZ'];
+const titles = ['PN','MS(o)','ComplexityLevel','L','W','H','','MS','MS Gap','Directions','Around Axis number','KeyMachine 3Axis','KeyMachine 4Axis','KeyMachine 5Axis','Feats','MiddlePointX','MiddlePointY','MiddlePointZ'];
 const data=[];
 data.push(titles);
 const parts =await Part.find({}).exec();
@@ -114,11 +136,32 @@ const parts =await Part.find({}).exec();
 for(index in parts){
     let p=parts[index];
     let bound=p.BoundingBox;
-    console.log(p);
-    console.log(bound);
+    let options=p.MachineOptions;
+    let keyMachineArr=[];
 
-    const dataRow=[p.PN,p.OriginalMS,p.ComplexityLevel,p.BoundingBox.L,p.BoundingBox.W,p.BoundingBox.H,' ',p.Directions.length,(p.OriginalMS-p.MS),p.directionString,'machine','setupsnumber',p.FeatursNumber,p.BoundingBox.MiddlePoint.x,p.BoundingBox.MiddlePoint.y,p.BoundingBox.MiddlePoint.z];
-    //  const dataRow=[p.PN,p.originMs,p.complexityLevel,'p.BoundingBox.H','p.BoundingBox.W','p.BoundingBox.L',p.directionString,'machine','setupsnumber',p.FeatursNumber,'p.BoundingBox.MiddlePoint.x','p.BoundingBox.MiddlePoint.y','p.BoundingBox.MiddlePoint.z',(p.OriginalMS-p.MS)];
+    let machine3=p.MachineOptions.filter(m=>{if(m.KeyMachine=='3 Axis') return m;});
+    let machine4=p.MachineOptions.filter(m=>{if(m.KeyMachine=='4 Axis') return m;});
+    let machine5=p.MachineOptions.filter(m=>{if(m.KeyMachine=='5 Axis') return m});
+    
+    if(machine3.length==0)
+        keyMachineArr[0]=0;
+    else{
+        keyMachineArr[0]=machine3[0].SetUpsNumber;
+    }
+
+    if(machine4.length==0)
+        keyMachineArr[1]=0;
+    else{
+        keyMachineArr[1]=machine4[0].SetUpsNumber;
+    }
+
+    if(machine5.length==0)
+      keyMachineArr[2]=0;
+    else{
+        keyMachineArr[2]=machine5[0].SetUpsNumber;
+    }
+
+    const dataRow=[p.PN,p.OriginalMS,p.ComplexityLevel,p.BoundingBox.L,p.BoundingBox.W,p.BoundingBox.H,' ',p.Directions.length,(p.OriginalMS-p.MS),p.DirectionStr,p.AroundAxisNumber,keyMachineArr[0],keyMachineArr[1],keyMachineArr[2],p.FeatursNumber,p.BoundingBox.MiddlePoint.x,p.BoundingBox.MiddlePoint.y,p.BoundingBox.MiddlePoint.z];
 
     data.push(dataRow);
 }
@@ -147,7 +190,9 @@ const ClearDB = async (req, res, next) => {
     await Feat.deleteMany({});
     await Direction.deleteMany({});
     await Bounding.deleteMany({});
+    await Machine.deleteMany({});
     await Part.deleteMany({});
+
 
     res.status(200).send("ok");
 }

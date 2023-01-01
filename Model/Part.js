@@ -29,12 +29,23 @@ const PartSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    ABnornalFeatCount:{
+        type:Number,
+        default:0
+    },
     BoundingBox:{
         type:Object
     },
-    Machine:{
+    ComplexityLevel:{
+        type:Number
+    },
+    AroundAxisNumber:{
+        type:Number
+    },
+    MachineOptions:{
         type:[Object],
-    }
+    },
+   
     
 });
 module.exports = mongoose.model("Part", PartSchema);

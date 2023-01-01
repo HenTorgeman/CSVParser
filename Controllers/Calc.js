@@ -6,8 +6,12 @@ const Direction = require("../Model/Direction");
 const Part = require("../Model/Part");
 const e = require("express");
 const Bounding = require("../Model/Bounding");
+const Machine = require("../Model/Machine");
 var passCircelArr = [];
 var featIndex=0;
+
+
+//-------------MAIN FUNCTION--------------
 
 //(01)
 const GetCirclesArr=(tableFile,pn)=>
@@ -43,8 +47,8 @@ const GetCirclesArr=(tableFile,pn)=>
     resolve(circleArr);
 });
 
+//(02)
 const GetBounding=(pn,fullTable,w,l,h)=>
-
     new Promise(async resolve =>{
 
         let arrayX=[];
@@ -232,7 +236,7 @@ const GetBounding=(pn,fullTable,w,l,h)=>
     resolve(bounding);
 });
 
-//(02)
+//(03)
 const GetFeatArr=(circleArr,pn,bounding)=>
 new Promise(async resolve =>{
     featIndex=0;
@@ -249,7 +253,7 @@ new Promise(async resolve =>{
     resolve(completeCirclesArr);
 });
 
-//(03)
+//(04)
 const GetDirectionsArr=(faetArr,pn,bounding)=>
 new Promise(async resolve =>{
     const Directions=[];
@@ -262,8 +266,6 @@ new Promise(async resolve =>{
         let directionObj=await CreateDirectionObject(s,pn,templist);
         Directions.push(directionObj);
         DirectionStringSet.push(directionObj.DirectionAxis);
-        console.log('directionObj.DirectionAxis');
-        console.log(directionObj.DirectionAxis);
         let filltered = FeatList.filter((item) => item.AxisB != s);
         FeatList = filltered;
     }
@@ -277,8 +279,7 @@ new Promise(async resolve =>{
                 
                 Directions.push(directionObj);
                 DirectionStringSet.push(directionObj.DirectionAxis);
-                console.log('directionObj.DirectionAxis');
-                console.log(directionObj.DirectionAxis);
+
                 let filltered= FeatList.filter((item) => item.AxisB != f.AxisB);
                 FeatList=filltered;
             }
@@ -333,7 +334,7 @@ new Promise(async resolve =>{
     resolve(filltered);
 });
 
-//(04)
+//(05) DIDNT IMPLEMENT : need the middle point of each surface to know which feat is BLINDHOLE or HOLE. 
 const ReduceDirections=(DirectionArr,pn,bounding)=>
 new Promise(async resolve =>{
 
@@ -341,6 +342,169 @@ new Promise(async resolve =>{
 
     resolve(null);
 });
+
+//(06)
+const CalculateAroundAxisNumber=(directionArr,pn,bounding)=>
+new Promise(async resolve =>{
+
+    let aroundAxisList=[];
+    let result=0;
+
+    directionArr.map((doc) => {
+        if(!aroundAxisList.includes(doc.AbsAxis)){
+            aroundAxisList.push(doc.AbsAxis);
+        }
+    });
+
+    if(aroundAxisList.length<=2) result=1;
+    if(aroundAxisList.length=3) result=2;
+    if(aroundAxisList.length>3) result=3;
+
+    resolve(result);
+});
+
+//(07)
+const CalculateKetMachineOptions=(obj)=>
+new Promise(async resolve =>{
+
+    let pn=obj.PN;
+    let directionArr=obj.directions;
+    let complexity=obj.complexityLevel;
+    let aroundAxisNumber=obj.aroundAxis;
+    let msNumber=directionArr.length;
+    let machineOptions=[];
+    
+    if(msNumber<=2)
+    {
+        // # MD ==1 || MD== 2
+        const machine=new Machine({
+            PN:pn,
+            KeyMachine:'3 Axis',
+            SetUpsNumber:1
+        });
+        machineOptions.push(machine);
+        resolve(machineOptions);
+
+    }
+    else{
+        // # MD = 2+
+
+        //complexity 3 : Low      
+        if(complexity==3)
+        {            
+
+            if(aroundAxisNumber==1){
+                    let machine3=creatiMachine3(pn,msNumber);
+                    let machine4=creatiMachine4(pn,1);
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+
+            }
+            if(aroundAxisNumber==2){                
+                    let machine3=creatiMachine3(pn,msNumber);
+                    let machine4=creatiMachine4(pn,2);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+                    machineOptions.push(machine5);
+
+            }
+            if(aroundAxisNumber==3){    
+                
+                let machine3=creatiMachine3(pn,msNumber);
+                let machine4=creatiMachine4(pn,3);
+                let machine5=creatiMachine5(pn,1);
+
+                machineOptions.push(machine3);
+                machineOptions.push(machine4);
+                machineOptions.push(machine5);
+               
+            }
+        }
+        //complexity 2 : Medium
+        if(complexity==2)
+        {            
+
+            if(aroundAxisNumber==1){
+                    let machine3=creatiMachine3(pn,msNumber);
+                    let machine4=creatiMachine4(pn,1);
+
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+
+            }
+            if(aroundAxisNumber==2){                
+                    let machine3=creatiMachine3(pn,msNumber);
+                    let machine4=creatiMachine4(pn,2);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+                    machineOptions.push(machine5);
+
+            }
+            if(aroundAxisNumber==3){    
+                let machine4=creatiMachine4(pn,3);
+                let machine5=creatiMachine5(pn,1);
+
+                machineOptions.push(machine4);
+                machineOptions.push(machine5);
+                
+            }
+        }
+        //complexity 1 : High || 0 : Very High
+        if(complexity<=1)
+        {            
+            if(aroundAxisNumber==1){
+                    let machine4=creatiMachine4(pn,1);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine5);
+                    machineOptions.push(machine4);
+            }
+            if(aroundAxisNumber==2){                
+                    let machine4=creatiMachine4(pn,2);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine4);
+                    machineOptions.push(machine5);
+            }
+            if(aroundAxisNumber==3){    
+                let machine5=creatiMachine5(pn,1);
+                machineOptions.push(machine5);
+            }
+        }
+        resolve(machineOptions)
+    }
+});
+//-------------SUB FUNCTION--------------
+
+function creatiMachine3(pn,setupsNumber){
+    const machine=new Machine({
+        PN:pn,
+        KeyMachine:'3 Axis',
+        SetUpsNumber:setupsNumber
+    });
+    return machine;
+}
+function creatiMachine4(pn,setupsNumber){
+    const machine=new Machine({
+        PN:pn,
+        KeyMachine:'4 Axis',
+        SetUpsNumber:setupsNumber
+    });
+    return machine;
+
+}
+function creatiMachine5(pn,setupsNumber){
+    const machine=new Machine({
+        PN:pn,
+        KeyMachine:'5 Axis',
+        SetUpsNumber:setupsNumber
+    });
+    return machine;
+}
 
 //(01-1)
 const CreateNewCircelAction=(rowArr, fileArr,pn)=>
@@ -520,22 +684,29 @@ const CreateFeat=(circelObj,pn,index,bounding)=>
                         if(newArr.length>0){
                             let circleArr=newArr;
                    
+                            //# 1 action in the actionarray. meanning: type is RADIUS its possible both ways.
                             if(circleArr.length==1){
                                 isOneDirection=true;
                                 isPossibleBoth=true;
                                 type='RADIUS';
                                 direction=circleArr[0].A.x>MiddlePointPart.x?'X':'-X';
+                                maxRadius=circleArr[0].Radius;
                             }
                             else{
-                                //Blind Holes : All actions in the same direction
+                                 //# more then one action. checking if all in the same side of the model with the middle point. if yes : BLINDHOLE.
                                 let tempArr=circleArr.filter(e=>{return e.A.x>MiddlePointPart.x});
                                 if(tempArr.length==circleArr.length || tempArr.length==0){
                                     isOneDirection=true;
                                     isPossibleBoth=false;
                                     type='BHOLE';
                                     direction=circleArr[0].A.x>MiddlePointPart.x?'X':'-X';
+                                    maxRadius=Math.max(...circleArr.map(o => o.Radius));
+
                                 }
-                                //Pass Holes  : Actions with diffrent directions
+                                
+                                
+                            //# more then one action. Not all direction in the same side. check if its CBOR or HOLE.
+
                                 else{
                                  maxRadius=Math.max(...circleArr.map(o => o.Radius));
                                     let MaxRadiusArr=circleArr.filter(e=>{return e.Radius==maxRadius});                                   
@@ -580,6 +751,8 @@ const CreateFeat=(circelObj,pn,index,bounding)=>
                             isPossibleBoth=true;
                             type='RADIUS';
                             direction=circleArr[0].A.y>MiddlePointPart.y?'Y':'-Y';
+                            maxRadius=circleArr[0].Radius;
+
                         }
                         else{
                             //Blind Holes : All actions in the same direction
@@ -589,6 +762,8 @@ const CreateFeat=(circelObj,pn,index,bounding)=>
                                 isPossibleBoth=false;
                                 type='BHOLE';
                                 direction=circleArr[0].A.y>MiddlePointPart.y?'Y':'-Y';
+                                maxRadius=Math.max(...circleArr.map(o => o.Radius));
+
                             }
                             //Pass Holes  : Actions with diffrent directions
                             else{
@@ -635,6 +810,7 @@ const CreateFeat=(circelObj,pn,index,bounding)=>
                                     isPossibleBoth=true;
                                     type='RADIUS';
                                     direction=circleArr[0].A.z>MiddlePointPart.z?'Z':'-Z';
+                                    maxRadius=circleArr[0].Radius;
                                 }
                                 else{
                                     //Blind Holes : All actions in the same direction
@@ -644,6 +820,8 @@ const CreateFeat=(circelObj,pn,index,bounding)=>
                                         isPossibleBoth=false;
                                         type='BHOLE';
                                         direction=circleArr[0].A.z>MiddlePointPart.z?'Z':'-Z';
+                                        maxRadius=Math.max(...circleArr.map(o => o.Radius));
+
                                     }
                                     //Pass Holes  : Actions with diffrent directions
                                     else{
@@ -758,6 +936,8 @@ resolve(direction);
 });
 
 //(Heplers)
+
+
 function GetUniqKeyForCircle(circleObj){
     var str='r'+circleObj.radius+'x'+circleObj.A.x+'y'+circleObj.A.y+'z'+circleObj.A.z+'x'+circleObj.B.x+'y'+circleObj.B.y+'z'+circleObj.B.z+'x'+circleObj.C.x+'y'+circleObj.C.y+'z'+circleObj.C.z;
     return str;
@@ -903,5 +1083,7 @@ module.exports = {
     GetDirectionsArr,
     GetMSPart,
     GetBounding,
+    CalculateAroundAxisNumber,
+    CalculateKetMachineOptions,
     ClearDB,
 };
