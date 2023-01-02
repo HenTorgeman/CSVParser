@@ -34,6 +34,15 @@ const BoundingSchema = new mongoose.Schema({
     H:{
         type:String
     },
+    WAxis:{
+        type:String
+    },
+    LAxis:{
+        type:String
+    },
+    HAxis:{
+        type:String
+    },
     High:{
         type:Number
     }

@@ -9,7 +9,7 @@ const fs = require("fs");
 
 const Bounding = require("../Model/Bounding");
 const { captureRejectionSymbol } = require("events");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/10-parts-ScriptInput.csv'
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/20-parts-ScriptInput.csv'
 
 const colPartNumber=0;
 const colPath=1;
@@ -131,7 +131,6 @@ const titles = ['PN','MS(o)','ComplexityLevel','L','W','H','','MS','MS Gap','Dir
 const data=[];
 data.push(titles);
 const parts =await Part.find({}).exec();
-    
     
 for(index in parts){
     let p=parts[index];
