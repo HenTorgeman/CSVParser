@@ -9,7 +9,7 @@ const fs = require("fs");
 
 const Bounding = require("../Model/Bounding");
 const { captureRejectionSymbol } = require("events");
-const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/20-parts-ScriptInput.csv'
+const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/30-parts-ScriptInput.csv';
 
 const colPartNumber=0;
 const colPath=1;
@@ -18,7 +18,6 @@ const colComplexity=4;
 const colH=7;
 const colW=6;
 const colL=5;
-
 
 const Start = async (req, res, next) => {
     console.log("## Reading file....");
@@ -55,14 +54,17 @@ const Start = async (req, res, next) => {
 
             let partData = fs.readFileSync(path, "utf8").split("\r\n");                   
             partsName.push(pn);
-            const circlesArr = await CalcController.GetCirclesArr(partData, pn);
-            saveAll(circlesArr);
             const bounding=await CalcController.GetBounding(pn,partData,w,l,h);
             bounding.save();
+            const circlesArr = await CalcController.GetCirclesArr(partData, pn,bounding.MiddlePoint);
+            saveAll(circlesArr);
+          
             const featsArr = await CalcController.GetFeatArr(circlesArr,pn,bounding);
             saveAll(featsArr);
             const directionArr = await CalcController.GetDirectionsArr(featsArr,pn,bounding);
             saveAll(directionArr);
+            // const FiltteredDirectionArr = await CalcController.ReduceDirections(directionArr,pn,bounding);
+
             const aroundAxisNumber = await CalcController.CalculateAroundAxisNumber(directionArr,pn,bounding);
 
             const obj={
@@ -127,7 +129,7 @@ const Start = async (req, res, next) => {
 const Print = async (req, res, next) => {
 
 
-const titles = ['PN','MS(o)','ComplexityLevel','L','W','H','','MS','MS Gap','Directions','Around Axis number','KeyMachine 3Axis','KeyMachine 4Axis','KeyMachine 5Axis','Feats','MiddlePointX','MiddlePointY','MiddlePointZ'];
+const titles = ['PN','MS(o)','ComplexityLevel','L','W','H','','MS','MS Gap','Directions','Around Axis number','KeyMachine 3Axis','KeyMachine 4Axis','KeyMachine 5Axis','Feats'];
 const data=[];
 data.push(titles);
 const parts =await Part.find({}).exec();
@@ -160,7 +162,7 @@ for(index in parts){
         keyMachineArr[2]=machine5[0].SetUpsNumber;
     }
 
-    const dataRow=[p.PN,p.OriginalMS,p.ComplexityLevel,p.BoundingBox.L,p.BoundingBox.W,p.BoundingBox.H,' ',p.Directions.length,(p.OriginalMS-p.MS),p.DirectionStr,p.AroundAxisNumber,keyMachineArr[0],keyMachineArr[1],keyMachineArr[2],p.FeatursNumber,p.BoundingBox.MiddlePoint.x,p.BoundingBox.MiddlePoint.y,p.BoundingBox.MiddlePoint.z];
+    const dataRow=[p.PN,p.OriginalMS,p.ComplexityLevel,p.BoundingBox.L,p.BoundingBox.W,p.BoundingBox.H,' ',p.Directions.length,(p.OriginalMS-p.MS),p.DirectionStr,p.AroundAxisNumber,keyMachineArr[0],keyMachineArr[1],keyMachineArr[2],p.FeatursNumber];
 
     data.push(dataRow);
 }
