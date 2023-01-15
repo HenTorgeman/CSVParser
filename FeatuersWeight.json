@@ -1,0 +1,22 @@
+{
+    "PN": 0,
+    "Description":0,
+    "H":0,
+    "W":0,
+    "L":0,
+    "Hb":0,
+    "Wb":0,
+    "Lb":0,
+    "Surface":0,
+    "NetWeight":0,
+    "Volume":0,
+    "MaxLength":0,
+    "Shape":0,
+    "MaterialVoulme":0,
+    "NumberOfFeat":0,
+
+    "MaterialToRemove":0,
+    "Size":0
+
+
+}

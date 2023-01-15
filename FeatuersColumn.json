@@ -1,0 +1,25 @@
+{
+  
+"PN": 0,
+"Description":1,
+"H":2,
+"W":3,
+"L":4,
+"Hb":5,
+"Wb":6,
+"Lb":7,
+"MD":8,
+"Surface":9,
+"NetWeight":10,
+"Volume":11,
+"MaxLength":12,
+"Shape":13,
+"MaterialVoulme":14,
+"NumberOfFeat":15,
+"Dimensions":16,
+"ComplexityLevel":17,
+"UnitCost":18,
+"SetUpCost":19,
+"UnitLT":20
+ 
+}
