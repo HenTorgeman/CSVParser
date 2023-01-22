@@ -89,7 +89,8 @@ const GetPrice = async (req, res, next) => {
         nodeIndex++;
         console.log("## Done 😀: "+nodeIndex+" Parts created" +GetTime());
         res.status(200).send(obj);
-    }
+}
+
 function GetTime(){
     let date_ob = new Date();
     let hours = date_ob.getHours();
