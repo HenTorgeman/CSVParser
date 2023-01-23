@@ -11,40 +11,34 @@ const PartSchema = new mongoose.Schema({
     FilePath: {
         type: String,
     },
-    MS:{
-        type: Number,
-        default: 0,
-    },
-    OriginalMS:{
-        type: Number,
-        default: 0,
-    },
-    Directions:{
-        type: [Object]
-    },
-    DirectionStr:{
-        type: String
-    },
-    FeatursNumber:{
-        type: Number,
-        default: 0,
-    },
-    ABnornalFeatCount:{
-        type:Number,
-        default:0
-    },
-    BoundingBox:{
+    BoundingInfo:{
         type:Object
     },
     ComplexityLevel:{
         type:Number
     },
-    AroundAxisNumber:{
+    PartCalculation:{
+        type:Object
+    },
+    ProductionProcesses:{
+        type:[Object]
+    },
+    STR:{
+        type:Boolean
+    },
+    RM:{
+        type:Object
+    },
+    KeyMachine:{
+        type:String
+    },
+    Price:{
         type:Number
     },
-    MachineOptions:{
-        type:[Object],
+    LT:{
+        type:Number
     },
+
    
     
 });

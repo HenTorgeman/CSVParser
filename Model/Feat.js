@@ -30,10 +30,6 @@ const FeatSchema = new mongoose.Schema({
         type:Boolean,
         default:false,
      },
-
-    AbsulteAxisC: {
-        type: String,
-    },
     RepreCount:{
         type:Number,
         default:0

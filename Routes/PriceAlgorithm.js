@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const Calc = require("../Controllers/FileAnalysis");
+const Calc = require("../Controllers/PriceAlgorithm");
 
-router.post("/ClearDB", Calc.ClearDB);
+
 
 module.exports = router;

@@ -1,18 +1,15 @@
 const mongoose = require("mongoose");
 
-const KeyMachineSchema = new mongoose.Schema({
+const SetUpSchema = new mongoose.Schema({
     PN:{
         type:String
     },
-    KeyMachine:{
+    MachineName:{
         type:String,
         enum: ['4 Axis', '3 Axis', '5 Axis'],
     },
     SetUpsNumber:{
         type:Number
     },
-    // AroundAxisNumber:{
-    //     type:Number
-    // }
 });
-module.exports = mongoose.model("KeyMachine", KeyMachineSchema);
+module.exports = mongoose.model("SetUp", SetUpSchema);

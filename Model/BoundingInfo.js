@@ -4,24 +4,6 @@ const BoundingSchema = new mongoose.Schema({
     PN: {
         type: String,
     },
-    MinX:{
-        type: Number,
-    },
-    MaxX:{
-        type: Number,
-    },
-    MinY:{        
-        type: Number,
-    },
-    MaxY:{        
-        type: Number,
-    },
-    MinZ:{        
-        type: Number,
-    },
-    MaxZ:{        
-        type: Number,
-    },
     MiddlePoint:{
         type:Object
     },
@@ -43,9 +25,28 @@ const BoundingSchema = new mongoose.Schema({
     HAxis:{
         type:String
     },
-    High:{
+    VolumNet:{
+        type:Number
+    },
+    SurfaceNet:{
+        type:Number
+    },
+    Volum:{
+        type:Number
+    },
+    Surface:{
+        type:Number
+    },
+    Size:{
+        type:String,
+        enum: ['Small','Medium','Large']
+    },
+    Shape:{
+        type:String,
+        enum:['CUBE','PLATE']
+    },
+    MaterialWeight:{
         type:Number
     }
-    
 });
 module.exports = mongoose.model("Bounding", BoundingSchema);

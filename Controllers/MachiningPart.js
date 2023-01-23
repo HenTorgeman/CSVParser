@@ -2,13 +2,15 @@ const Part= require("../Model/Part");
 const Circel = require("../Model/Circel");
 const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
-const Machine = require("../Model/Machine");
+const Machine = require("../Model/SetUp");
+const Bounding = require("../Model/BoundingInfo");
 
-var CalcController = require("./Calc");
+
+var CalcController = require("./FileAnalysis");
+var CalcController = require("./FileAnalysis");
+
 const fs = require("fs");
 
-const Bounding = require("../Model/Bounding");
-const { captureRejectionSymbol } = require("events");
 const filePath = '/Users/hentorgeman/Desktop/AutomatedCosting/ScriptReading02/30-parts-ScriptInput.csv';
 
 const colPartNumber=0;
