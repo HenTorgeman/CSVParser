@@ -1,17 +1,21 @@
 const mongoose = require("mongoose");
 
 const MrrlSchema = new mongoose.Schema({
+    Material: {
+        type:String,
+        // enum:['Aluminum'],
+    },
     Size: {
             type:String,
-            enum: ['Small','Medium','Large']
+            // enum: ['Small','Medium','Large']
     },
     ProcessName: {
         type:String,
+        // enum: ['Roughing', 'Finishing','FinishingHT', 'Holes','Semi-finishing', 'Holder']
     },
-    Time:{
+    Lt:{
         //Min per hour
         type:Number,
-        default:0
     },
 });
 module.exports = mongoose.model("Mrr", MrrlSchema);

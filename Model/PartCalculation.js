@@ -28,7 +28,11 @@ const PartCalculationSchema = new mongoose.Schema({
     DirectionStr:{
         type: String
     },
-   
-    
+    KeySetupsNumber:{
+        type:Number
+    },
+    AdditionalSetupsNumber:{
+        type:Number
+    },
 });
 module.exports = mongoose.model("PartCalculation", PartCalculationSchema);

@@ -1,0 +1,26 @@
+{
+    "Index": 0,
+    "PN": 1,
+    "file":2,
+    "ComplexityLevel":3,
+    "STR":4,
+    "RM":5,
+    "L":6,
+    "Laxis":7,
+    "W":8,
+    "Waxis":9,
+    "H":10,
+    "Haxis":11,
+    "CenterX":12,
+    "CenterY":13,
+    "CenterZ":14,
+    "NetVolume":15,
+    "Surface":16,
+    "KeyMachine":17,
+    "KeyMachineSetUps":18,
+    "OtherSetups":19,
+    "AroundAxis":20,
+    "MD":21,
+    "HolesThreds":22
+
+}

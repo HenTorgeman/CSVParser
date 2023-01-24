@@ -8,7 +8,8 @@ const ProductionProcessesSchema = new mongoose.Schema({
         type:Number
     },
     ProcessName:{
-        type:String
+        type:String,
+        enum: ['Roughing', 'Finishing','FinishingHT', 'Holes','Semi-finishing', 'Holder']
     },
     Type:{
         type:String,

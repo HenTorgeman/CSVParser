@@ -20,25 +20,30 @@ const PartSchema = new mongoose.Schema({
     PartCalculation:{
         type:Object
     },
+    PartInfo:{
+        type:Object
+    },
     ProductionProcesses:{
         type:[Object]
     },
     STR:{
         type:Boolean
     },
-    RM:{
+    RawMaterial:{
         type:Object
     },
-    KeyMachine:{
-        type:String
-    },
-    Price:{
+    Cost:{
         type:Number
     },
     LT:{
         type:Number
     },
-
+    BatchTime:{
+        type:Number
+    },
+    BatchCost:{
+        type:Number
+    },
    
     
 });

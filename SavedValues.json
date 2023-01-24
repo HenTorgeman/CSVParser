@@ -1,5 +1,38 @@
 {
   
-"MaxHeightTool": 75
- 
+"MaxHeightTool": 75,
+"RmBoundingBuffer":10,
+"LeadTimePerSetUp":1,
+"HoursPerSetUp":2,
+"Shape":0.25,
+"Size":{
+    "Small":300000,
+    "Medium":3000000
+},
+"Machines":{
+    "3AxisCostHour":80,
+    "4AxisCostHour":100,
+    "5AxisCostHour":250,
+    "3AxisCostMin":1.33,
+    "4AxisCostMin":1.67,
+    "5AxisCostMin":4.17
+},
+"Proceses":{
+    "Roughing":0,
+    "Finishing":1,
+    "FinishingHT":2,
+    "Holes":3,
+    "Semi-finishing":4,
+    "Holder":5
+},
+"MrrGroupPracentage":
+{
+    "VeryHighSmall":75,
+    "VeryHeighMedium":50,
+    "HighMedium":70,
+    "HighLarge":50,
+    "MiddleLarge":50
+
+}
+
 }
