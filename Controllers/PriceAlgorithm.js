@@ -20,9 +20,11 @@ const CalculateProduction=async (part)=>{
 
         //# Roughing
          if(roughingSetupNumber>0){
-                const minutes = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
+                const roughingTimePerMM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
                 const mrrVolum =GetPartMrrNumber(part.BoundingInfo);
-                const roughingTime = mrrVolum/minutes;
+                const mrrVolumCm=(mrrVolum/values.UnitConvert.Dm3ToCM3)
+
+                const roughingTime = mrrVolumCm/roughingTimePerMM;
     
                 const process=ProcessController.CreateRoughingProcess('Roughing',roughingTime);
                 process.Index=processIndex;
@@ -32,23 +34,26 @@ const CalculateProduction=async (part)=>{
          }
 
         //# ProcessHolder
-            const holderTime = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Holder');
+            const holderTimePerPart = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Holder');
+            const processHolder= ProcessController.CreateRoughingProcess('Holder',holderTimePerPart);
+
             if(isHolderSetupNeeded==true){
-                const process= ProcessController.CreateRoughingProcess('Holder',holderTime);
-                process.Index=processIndex;
-                process.PN=part.PN;
-                partProductionProcess.push(process);
+                processHolder.Index=processIndex;
+                processHolder.PN=part.PN;
                 processIndex++;
             }
             else{
-                if(holderTime>0){
-                    holderCostWithoutSetups=holderTime*values.Machines["3AxisCostMin"];
+                if(holderTimePerPart>0){
+                    processHolder.Lt+holderTimePerPart;
+                    // holderCostWithoutSetups=holderTime*values.Machines["3AxisCostMin"];
                 }
             }
+            partProductionProcess.push(processHolder);
+
 
         //# ProcessHolderRemove
         if(isHolderRemoveSetUpNeeded==true){
-            let process=await ProcessController.CreateRoughingProcess('Holder',holderTime);
+            let process= ProcessController.CreateRoughingProcess('Holder',holderTime);
             process.Index=processIndex;
             process.PN=part.PN;
             partProductionProcess.push(process);
@@ -56,23 +61,29 @@ const CalculateProduction=async (part)=>{
         }
 
         //# Finishing
-        const finishingSetupTime = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
+        const finishingSetupTimePerMM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
+        const semifinishingSetupTimePerMM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
+
+        const surface=part.BoundingInfo.Surface;
+        const surfaceCm=(surface/values.UnitConvert.Dm2ToCM2);
+        const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerMM)+(surfaceCm/semifinishingSetupTimePerMM);
+        
         //# In script Version : will be based on around axis and around axis secondary.
             for(let i=0;i<finishingSetupNumber;i++){
                 if(keyMachine=='4 Axis'){
-                    let process= ProcessController.Create4AxisProcess('Finishing',finishingSetupTime);
+                    let process= ProcessController.Create4AxisProcess('Finishing',finishingTimeMinutes);
                     process.Index=processIndex+i;
                     process.PN=part.PN;
                     partProductionProcess.push(process);
                 }
                 if(keyMachine=='5 Axis'){
-                    let process= ProcessController.Create5AxisProcess('Finishing',finishingSetupTime);
+                    let process= ProcessController.Create5AxisProcess('Finishing',finishingTimeMinutes);
                     process.Index=processIndex+i;
                     process.PN=part.PN;
                     partProductionProcess.push(process);
                 }
                 if(keyMachine=='3 Axis'){
-                    let process= ProcessController.Create3AxisProcess('Finishing',finishingSetupTime);
+                    let process= ProcessController.Create3AxisProcess('Finishing',finishingTimeMinutes);
                     process.Index=processIndex+i;
                     process.PN=part.PN;
                     partProductionProcess.push(process);
@@ -228,13 +239,17 @@ function GetPartGrossVolume(L,W,H){
     let w=parseFloat(W);
     let h=parseFloat(H);
 
-    let Val=(l+((l/100)*10))*(w+((w/100)*10))*(h+((h/100)*10));
-    
+    let lGross=l+((l*10)/100);
+    let wlGross=w+((w*10)/100);
+    let hGross=h+((h*10)/100);
+
+    let Val=lGross*wlGross*hGross;
     return Val;
 }
 function GetPartMaterialWeight(L,W,H,price){
 
 }
+
 function CalculateCost(part){
    let cost=0;
     for(let i=0;i<part.ProductionProcesses.length;i++){
@@ -251,19 +266,19 @@ function CalculateLT(part){
     }
     return minuets;
 }
-
  function CalculateBatchPrice(part){
     let cost=0;
     let machineCostPerMin=0;
-    if(part.PartInfo.keyMachine=='3 Axis') machineCostPerMin=values.Machines["3AxisCostMin"];
-    if(part.PartInfo.keyMachine=='4 Axis') machineCostPerMin=values.Machines["4AxisCostMin"];
-    if(part.PartInfo.keyMachine=='5 Axis') machineCostPerMin=values.Machines["5AxisCostMin"];
+
+    if(part.PartInfo.KeyMachine=='3 Axis') machineCostPerMin=values.Machines.Machine3AxisCostMin;
+    if(part.PartInfo.KeyMachine=='4 Axis') machineCostPerMin=values.Machines.Machine4AxisCostMin;
+    if(part.PartInfo.KeyMachine=='5 Axis') machineCostPerMin=values.Machines.Machine5AxisCostMin;
 
     let batchAdditionalCost=120*machineCostPerMin;
      for(let i=0;i<part.ProductionProcesses.length;i++){
          let process=part.ProductionProcesses[i];
-         cost+=process.Cost+batchAdditionalCost;
-        
+         let val=process.Cost+batchAdditionalCost;
+         cost+=val;
     }
     return cost;
 }
@@ -281,6 +296,7 @@ function CalculateLT(part){
 
 
 //#Pulling db data
+
 const GetMrrTimeMinutes = async (material,size,processName)=>{
     const docs =await CMrr.find({ Material:material,Size: size,ProcessName:processName}).exec();
     let value=null;

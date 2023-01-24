@@ -35,6 +35,14 @@ const PartSchema = new mongoose.Schema({
     Cost:{
         type:Number
     },
+    RoughingMinuets:{
+        type:Number
+
+    },
+    FinishingMinuets:{
+        type:Number
+
+    },
     LT:{
         type:Number
     },

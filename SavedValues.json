@@ -10,12 +10,12 @@
     "Medium":3000000
 },
 "Machines":{
-    "3AxisCostHour":80,
-    "4AxisCostHour":100,
-    "5AxisCostHour":250,
-    "3AxisCostMin":1.33,
-    "4AxisCostMin":1.67,
-    "5AxisCostMin":4.17
+    "Machine3AxisCostHour":80,
+    "Machine4AxisCostHour":100,
+    "Machine5AxisCostHour":250,
+    "Machine3AxisCostMin":1.33,
+    "Machine4AxisCostMin":1.67,
+    "Machine5AxisCostMin":4.17
 },
 "Proceses":{
     "Roughing":0,
@@ -33,6 +33,13 @@
     "HighLarge":50,
     "MiddleLarge":50
 
+},
+"UnitConvert":
+{
+    "Dm3ToMm3":1000000,
+    "Dm2ToMm2":10000,
+    "Dm3ToCM3":1000,
+    "Dm2ToCM2":1000
 }
 
 }

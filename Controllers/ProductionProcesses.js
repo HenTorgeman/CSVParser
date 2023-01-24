@@ -4,7 +4,7 @@ const ProductionProcesses = require("../Model/ProductionProcesses");
 const values = require("../SavedValues.json");
 
 function CreateRoughingProcess(processName,minutes){
-    let cost=minutes*values.Machines["3AxisCostMin"];
+    let cost=minutes*values.Machines["Machine3AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Additional',
@@ -18,7 +18,7 @@ function CreateRoughingProcess(processName,minutes){
 }
 
 function Create3AxisProcess(processName,minutes){
-    let cost=minutes*values.Machines["3AxisCostMin"];
+    let cost=minutes*values.Machines["Machine3AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Key',
@@ -31,7 +31,7 @@ function Create3AxisProcess(processName,minutes){
       
 }
 function Create4AxisProcess(processName,minutes){
-    let cost=minutes*values.Machines["4AxisCostMin"];
+    let cost=minutes*values.Machines["Machine4AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Key',
@@ -46,7 +46,7 @@ function Create4AxisProcess(processName,minutes){
 
 
 function Create5AxisProcess(processName,minutes){
-    let cost=minutes*values.Machines["5AxisCostMin"];
+    let cost=minutes*values.Machines["Machine5AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Key',

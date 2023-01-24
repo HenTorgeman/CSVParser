@@ -23,7 +23,7 @@ const AlgoController = require("./PriceAlgorithm");
 const BoundingInfo = require("../Model/BoundingInfo");
 const CRawMaterialFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/CRawMaterial.csv'
 const CMrrFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/CMRR.csv'
-const inputFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/Input.csv';
+const inputFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/Input100.csv';
 
 
 //Files
@@ -32,7 +32,7 @@ const ReadInputFile = async (req, res, next) => {
     console.log("## Reading file...."+GetTime());
     let table =fs.readFileSync(inputFile, "utf8").split("\r\n");
     const arr=[];
-    
+
     for(el of table){
         let row=el.split(",");
         let p=row[ColumnsInputFile.PN];
@@ -78,7 +78,7 @@ const ReadInputFile = async (req, res, next) => {
             boundingInfo.Shape=AlgoController.GetPartShape(boundingInfo.L,boundingInfo.W,boundingInfo.H);
             boundingInfo.Volum=AlgoController.GetPartGrossVolume(boundingInfo.L,boundingInfo.W,boundingInfo.H);
 
-            const RawMaterial =await CRawMaterial.find({ RawMaterial:row[ColumnsInputFile.RM]}).exec();
+            const RawMaterial = await CRawMaterial.find({ RawMaterial:row[ColumnsInputFile.RM]}).exec();
             part.RawMaterial=RawMaterial[0];
             part.BoundingInfo=boundingInfo;
             part.PartInfo=partInfo;
@@ -90,7 +90,25 @@ const ReadInputFile = async (req, res, next) => {
                     part.Cost=AlgoController.CalculateCost(part);
                     part.LT=AlgoController.CalculateLT(part);
                     part.BatchTime=AlgoController.CalculateBatchLT(part);
-                    part.BatchCost=AlgoController.CalculateLT(part);
+                    part.BatchCost=AlgoController.CalculateBatchPrice(part);
+
+                    let rughingTime=0;
+                    let finishingTime=0;
+
+                    for(let i=0;i<productionProcesses.length;i++){
+                        let proc=productionProcesses[i];
+                        if(proc.ProcessName=='Roughing' || proc.ProcessName=='Holes' || proc.ProcessName=='Holder'){
+                            rughingTime+=proc.Time;                        
+                        }
+                        else{
+                            finishingTime+=proc.Time;   
+                        }
+                    }
+
+                    part.RoughingMinuets=rughingTime;
+                    part.FinishingMinuets=finishingTime;
+
+
                     arr.push(part);
             }
 
