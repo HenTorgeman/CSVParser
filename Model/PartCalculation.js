@@ -4,13 +4,6 @@ const PartCalculationSchema = new mongoose.Schema({
     PN: {
         type: String,
     },
-    Index: {
-        type: Number,
-        default: 0,
-    },
-    FilePath: {
-        type: String,
-    },
     MD:{
         type: Number,
         default: 0,
@@ -31,8 +24,9 @@ const PartCalculationSchema = new mongoose.Schema({
     KeySetupsNumber:{
         type:Number
     },
-    AdditionalSetupsNumber:{
-        type:Number
+    KeyProductionProcesses:{
+        type:[Object],
     },
+
 });
 module.exports = mongoose.model("PartCalculation", PartCalculationSchema);

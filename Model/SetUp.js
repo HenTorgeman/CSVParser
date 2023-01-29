@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const SetUpSchema = new mongoose.Schema({
+    //machines
     PN:{
         type:String
     },

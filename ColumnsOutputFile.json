@@ -1,0 +1,21 @@
+{
+    "0": "Part number",
+    "1":"Key Machine Processes",
+    "2":"Additional Processes",
+    "3":"Machining Directions",
+    "4":"Around Axis",
+    "5":"MD Secondaey Axis",
+    "6":"Part Net Volume",
+    "7":"Part Gross Volume",
+    "8":"Part Surface",
+    "9":"Number Of Holes",
+    "10":"Roughing (Min)",
+    "11":"Finishing Min)",
+    "12":"Fine Holes Threads (Min)",
+    "13":"HolesTime (Min)",
+    "14":"Unit Cost",
+    "15":"Setup Cost",
+    "16":"Unit Lead Time (hrs)",
+    "17":"Batch Lead Time (days)"
+
+}

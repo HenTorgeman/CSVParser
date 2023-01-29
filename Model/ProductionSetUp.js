@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const ProductionProcessesSchema = new mongoose.Schema({
+const ProductionSetUpSchema = new mongoose.Schema({
     PN:{
         type:String
     },
@@ -11,12 +11,15 @@ const ProductionProcessesSchema = new mongoose.Schema({
         type:String,
         enum: ['Roughing', 'Finishing','FinishingHT', 'Holes','Semi-finishing', 'Holder']
     },
+    ProcessesNumber:{
+        type:Number
+    },
     Type:{
         type:String,
         enum: ['Key', 'Additional']
     },
     Machine:{
-        type:Object,
+        type:String,
     },
     Time:{
         type:Number
@@ -25,4 +28,4 @@ const ProductionProcessesSchema = new mongoose.Schema({
         type:Number
     },
 });
-module.exports = mongoose.model("ProductionProcesses", ProductionProcessesSchema);
+module.exports = mongoose.model("ProductionSetUp", ProductionSetUpSchema);

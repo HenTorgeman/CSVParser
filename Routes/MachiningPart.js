@@ -9,6 +9,10 @@ router.post("/ClearDB", Controller.ClearDB);
 router.post("/ClearMachineDB", Controller.ClearMachineDB);
 router.post("/ClearCMrrDB", Controller.ClearCMrrDB);
 router.post("/ClearRawMaterialDB", Controller.ClearRawMaterialDB);
+router.post("/ReadTestFile", Controller.ReadTestFile);
+router.get("/Print", Controller.Print);
+
+
 
 
 module.exports = router;

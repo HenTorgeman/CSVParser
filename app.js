@@ -2,7 +2,7 @@ const http = require('http');
 const https = require('https');
 
 const express = require("express");
-const Calc = require('./Routes/Calc');
+const FileAnalysis = require('./Routes/FileAnalysis');
 const MachiningPart = require('./Routes/MachiningPart');
 
 
@@ -17,7 +17,7 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once("open", () => console.log("Connected to mongo"));
 app.listen(port, () => console.log(`Example app listening at http://${hostname}:${port}/`))
-app.use("/Calc", Calc);
+app.use("/FileAnalysis", FileAnalysis);
 app.use("/MachiningPart",MachiningPart);
 
 

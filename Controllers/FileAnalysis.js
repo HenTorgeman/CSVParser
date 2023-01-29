@@ -8,12 +8,319 @@ const e = require("express");
 const Bounding = require("../Model/BoundingInfo");
 const Machine = require("../Model/SetUp");
 const values = require("../SavedValues.json");
+const PartCalculation = require("../Model/PartCalculation");
+const CalcController = require("../Controllers/FileAnalysis");
+
+const AroundAxis = require("../Model/AroundAxis");
 
 var passCircelArr = [];
 var featIndex=0;
 
 
-//-------------MAIN FUNCTION--------------
+
+const CalculatePart=(part)=>
+    new Promise(async resolve =>{
+        let partData = fs.readFileSync(part.FilePath, "utf8").split("\r\n");                   
+        
+        const circlesArr = await CalcController.GetCirclesArr(partData, pn,part.BoundingBox.MiddlePoint);
+        saveAll(circlesArr);
+        const featsArr = await CalcController.GetFeatArr(circlesArr,pn,part.BoundingBox);
+        saveAll(featsArr);
+        const directionArr = await CalcController.GetDirectionsArr(featsArr,pn,part.BoundingBox);
+        saveAll(directionArr);
+        // const FiltteredDirectionArr = await CalcController.ReduceDirections(directionArr,pn,bounding);
+        //const aroundAxisNumber = await CalcController.CalculateAroundAxisNumber(directionArr,pn,part.BoundingBox);
+        const AroundAxisArr = await CalcController.GetAroundAxis(directionArr,pn);
+        saveAll(AroundAxisArr);
+
+        const obj={
+            PN:pn,
+            directions:directionArr,
+            complexityLevel:complexity,
+            aroundAxis:AroundAxisArr
+        };
+
+        const machineArr = await CalcController.CalculateKeyMachineOptions(obj);
+        saveAll(machineArr);
+
+        //## Calc how many feats in part.
+        let totalFeats=0;
+        directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
+
+        //## Print the direction string
+        let directionString=GetAsString(directionArr);
+        let ms=directionArr.length;
+
+        //## Print the correct sate
+        if(ms!=originMs) {mistakeRange++;
+            mistakeList.push(pn);
+        }
+
+        const Calculation= new PartCalculation({
+            PN:pn,
+            Index:index,
+            MD:directionArr.length,
+            FeatursNumber:totalFeats,
+            AroundAxisNumber:aroundAxisNumber,
+            AroundAxises:aroundAxisNumber
+        });
+
+
+        var part = Part({
+            PN: pn,
+            index: index,
+            FilePath: path,
+            Directions:directionArr,
+            DirectionStr:directionString,
+            MS:ms,
+            OriginalMS:originMs,
+            FeatursNumber:totalFeats,
+            BoundingBox:bounding,
+            AroundAxisNumber:aroundAxisNumber,
+            ComplexityLevel:complexity,
+            MachineOptions:machineArr,
+        });
+        resolve(circleArr);
+});
+
+const CalculateKeyProductionProcesses=(obj)=>
+new Promise(async resolve =>{
+
+    let pn=obj.PN;
+    let directionArr=obj.directions;
+    let complexity=obj.complexityLevel;
+    let aroundAxisNumber=obj.aroundAxis;
+    let msNumber=directionArr.length;
+    // let machineOptions=[];
+    let Options=[];
+
+    // const option = new KeyProcessesOption({
+    //     PN:pn,
+
+    // });
+    //KeyProcessesOptionSchema
+    
+    if(msNumber<=2)
+    {       
+        let Processes=[];
+        const productionProcess=new ProductionProcesses ({
+                ProcessName:'Finishing',
+                Type:'Key',
+                Machine:'3 Axis',
+        });
+        Processes.push(productionProcess);
+
+        const option = new KeyProcessesOption({
+            PN:pn,
+            Processes:Processes,
+            KeyMachine:'3 Axis'
+        });
+        Options.push(option);
+    // resolve(machineOptions);
+    }
+    else{
+        // # MD = 2+
+        //complexity 3 : Low      
+        if(complexity==3)
+        {            
+
+            if(aroundAxisNumber==1){
+
+                //let machine3=creatiMachine3(pn,msNumber);
+
+                let Processes=[];
+                for(let i=0;i<msNumber;i++){
+                    const productionProcess=new ProductionProcesses ({
+                        ProcessName:'Finishing',
+                        Type:'Key',
+                        Machine:'3 Axis',
+                    });
+                    Processes.push(productionProcess);
+
+                }
+                const option = new KeyProcessesOption({
+                    PN:pn,
+                    Processes:Processes,
+                    KeyMachine:'3 Axis'
+                });
+                Options.push(option);
+
+                // let machine4=creatiMachine4(pn,1);
+
+
+
+
+                    let machine4=creatiMachine4(pn,1);
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+
+            }
+            if(aroundAxisNumber==2){                
+                    let machine3=creatiMachine3(pn,msNumber);
+                    let machine4=creatiMachine4(pn,2);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+                    machineOptions.push(machine5);
+
+            }
+            if(aroundAxisNumber==3){    
+                
+                let machine3=creatiMachine3(pn,msNumber);
+                let machine4=creatiMachine4(pn,3);
+                let machine5=creatiMachine5(pn,1);
+
+                machineOptions.push(machine3);
+                machineOptions.push(machine4);
+                machineOptions.push(machine5);
+               
+            }
+        }
+        //complexity 2 : Medium
+        if(complexity==2)
+        {            
+
+            if(aroundAxisNumber==1){
+                    let machine3=creatiMachine3(pn,msNumber);
+                    let machine4=creatiMachine4(pn,1);
+
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+
+            }
+            if(aroundAxisNumber==2){                
+                    let machine3=creatiMachine3(pn,msNumber);
+                    let machine4=creatiMachine4(pn,2);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine3);
+                    machineOptions.push(machine4);
+                    machineOptions.push(machine5);
+
+            }
+            if(aroundAxisNumber==3){    
+                let machine4=creatiMachine4(pn,3);
+                let machine5=creatiMachine5(pn,1);
+
+                machineOptions.push(machine4);
+                machineOptions.push(machine5);
+                
+            }
+        }
+        //complexity 1 : High || 0 : Very High
+        if(complexity<=1)
+        {            
+            if(aroundAxisNumber==1){
+                    let machine4=creatiMachine4(pn,1);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine5);
+                    machineOptions.push(machine4);
+            }
+            if(aroundAxisNumber==2){                
+                    let machine4=creatiMachine4(pn,2);
+                    let machine5=creatiMachine5(pn,1);
+
+                    machineOptions.push(machine4);
+                    machineOptions.push(machine5);
+            }
+            if(aroundAxisNumber==3){    
+                let machine5=creatiMachine5(pn,1);
+                machineOptions.push(machine5);
+            }
+        }
+        resolve(machineOptions)
+    }
+});
+
+//-------------MAIN FUNCTION----------------------------------------------
+
+const GetAroundAxis=(directionArr,pn)=>
+    new Promise(async resolve =>{
+        
+        let absDirctionList=[];
+        let result=0;
+        let aroundAxisObjects=[];
+        
+        directionArr.map((doc) => {
+            if(!absDirctionList.includes(doc.AbsAxis)){
+                absDirctionList.push(doc.AbsAxis);
+            }
+        });
+
+        if(absDirctionList.length<=2) {
+            const axisObj=new AroundAxis({
+                PN:pn,
+                Directions:directionArr,
+                NumberOfMD:directionArr.length
+            });
+            aroundAxisObjects.push(axisObj);
+        }
+
+        if(absDirctionList.length==3) {
+
+            let abs1=absDirctionList[0];
+            let direction1=directionArr.filter((e)=>{
+                if(e.AbsulteAxisB==abs1) return e;
+            });
+            let direction2=directionArr.filter((e)=>{
+                if(e.AbsulteAxisB!=abs1) return e;
+            });
+
+            const axisObj1=new AroundAxis({
+                PN:pn,
+                Directions:direction1,
+                NumberOfMD:direction1.length
+            });
+            const axisObj2=new AroundAxis({
+                PN:pn,
+                Directions:direction2,
+                NumberOfMD:direction2.length
+            });
+            aroundAxisObjects.push(axisObj1);
+            aroundAxisObjects.push(axisObj2);
+
+        
+        }
+        
+        if(absDirctionList.length>3){ 
+
+            let abs1=absDirctionList[0];
+            let abs2=absDirctionList[1];
+
+            let direction1=directionArr.filter((e)=>{
+                if(e.AbsulteAxisB==abs1) return e;
+            });
+            let direction2=directionArr.filter((e)=>{
+                if(e.AbsulteAxisB==abs2) return e;
+            });
+            let direction3=directionArr.filter((e)=>{
+                if(e.AbsulteAxisB!=abs2 &&e.AbsulteAxisB!=abs1 ) return e;
+            });
+
+            const axisObj1=new AroundAxis({
+                PN:pn,
+                Directions:direction1,
+                NumberOfMD:direction1.length
+            });
+            const axisObj2=new AroundAxis({
+                PN:pn,
+                Directions:direction2,
+                NumberOfMD:direction2.length
+            });
+            const axisObj3=new AroundAxis({
+                PN:pn,
+                Directions:direction3,
+                NumberOfMD:direction3.length
+            });
+            aroundAxisObjects.push(axisObj1);
+            aroundAxisObjects.push(axisObj2);
+            aroundAxisObjects.push(axisObj3);
+        }
+        
+    resolve(aroundAxisObjects);
+});
 
 //(01)
 const GetCirclesArr=(tableFile,pn,middlePoint)=>
@@ -492,7 +799,7 @@ new Promise(async resolve =>{
 });
 
 //(07)
-const CalculateKetMachineOptions=(obj)=>
+const CalculateKeyMachineOptions=(obj)=>
 new Promise(async resolve =>{
 
     let pn=obj.PN;
@@ -605,6 +912,10 @@ new Promise(async resolve =>{
         resolve(machineOptions)
     }
 });
+
+
+
+
 //-------------SUB FUNCTION--------------
 
 function creatiMachine3(pn,setupsNumber){
@@ -1217,6 +1528,8 @@ const ClearDB = async (req, res, next) => {
 }
 
 module.exports = {
+    CalculatePart,
+    GetAroundAxis,
     GetCirclesArr,
     GetFeatArr,
     GetDirectionsArr,
@@ -1224,6 +1537,6 @@ module.exports = {
     GetBounding,
     ReduceDirections,
     CalculateAroundAxisNumber,
-    CalculateKetMachineOptions,
+    CalculateKeyMachineOptions,
     ClearDB,
 };

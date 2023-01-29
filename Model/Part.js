@@ -41,7 +41,6 @@ const PartSchema = new mongoose.Schema({
     },
     FinishingMinuets:{
         type:Number
-
     },
     LT:{
         type:Number

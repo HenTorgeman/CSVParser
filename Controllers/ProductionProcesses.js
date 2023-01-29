@@ -1,14 +1,15 @@
 
 const CMrr = require("../Model/CMrr");
-const ProductionProcesses = require("../Model/ProductionProcesses");
+const ProductionProcesses = require("../Model/ProductionSetUp");
 const values = require("../SavedValues.json");
 
-function CreateRoughingProcess(processName,minutes){
+function CreateRoughingProcess(processName,minutes,processNumber){
     let cost=minutes*values.Machines["Machine3AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Additional',
             Machine:'3 Axis',
+            ProcessesNumber:processNumber,
             Time:minutes,
             Cost:cost
     });
@@ -17,25 +18,26 @@ function CreateRoughingProcess(processName,minutes){
       
 }
 
-function Create3AxisProcess(processName,minutes){
+function Create3AxisProcess(processName,minutes,processNumber){
     let cost=minutes*values.Machines["Machine3AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Key',
             Machine:'3 Axis',
+            ProcessesNumber:processNumber,
             Time:minutes,
             Cost:cost
     });
     return productionProcess;
-
-      
 }
-function Create4AxisProcess(processName,minutes){
+function Create4AxisProcess(processName,minutes,processNumber){
     let cost=minutes*values.Machines["Machine4AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Key',
             Machine:'4 Axis',
+            ProcessesNumber:processNumber,
+
             Time:minutes,
             Cost:cost
     });
@@ -45,10 +47,11 @@ function Create4AxisProcess(processName,minutes){
 }
 
 
-function Create5AxisProcess(processName,minutes){
+function Create5AxisProcess(processName,minutes,processNumber){
     let cost=minutes*values.Machines["Machine5AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
+            ProcessesNumber:processNumber,
             Type:'Key',
             Machine:'5 Axis',
             Time:minutes,

@@ -38,6 +38,7 @@
 {
     "Dm3ToMm3":1000000,
     "Dm2ToMm2":10000,
+    "MmToCm":1000,
     "Dm3ToCM3":1000,
     "Dm2ToCM2":1000
 }
