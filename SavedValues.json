@@ -25,10 +25,11 @@
     "Semi-finishing":4,
     "Holder":5
 },
-"MrrGroupPracentage":
+"StrCondition":
 {
     "VeryHighSmall":75,
     "VeryHeighMedium":50,
+    "HighSmall":90,
     "HighMedium":70,
     "HighLarge":50,
     "MiddleLarge":50

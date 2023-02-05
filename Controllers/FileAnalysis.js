@@ -21,62 +21,70 @@ var featIndex=0;
 
 const CalculateKeyMachineProcesses=(part)=>
     new Promise(async resolve =>{
-        let partData = fs.readFileSync(part.FilePath, "utf8").split("\r\n");                   
-        
-        const circlesArr = await GetCirclesArr(partData, part.PN,part.BoundingInfo.MiddlePoint);
-        SaveAll(circlesArr);
-        const featsArr = await GetFeatArr(circlesArr,part.PN,part.BoundingInfo);
-        SaveAll(featsArr);
-        const directionArr = await GetDirectionsArr(featsArr,part.PN,part.BoundingInfo);
-        SaveAll(directionArr);
-        const AroundAxisArr = await GetAroundAxis(directionArr,part.PN);
-        SaveAll(AroundAxisArr);
 
-        let totalFeats=0;
-        directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
-        let directionString=GetAsString(directionArr);
-
-        const CalcKeyProductionObj={
-            PN:part.PN,
-            directions:directionArr,
-            complexityLevel:part.ComplexityLevel,
-            aroundAxis:AroundAxisArr
-        };
-
-        const finishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
-        const semifinishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
-
-        const surface=part.BoundingInfo.Surface;
-        const surfaceCm=(surface/values.UnitConvert.MmToCm);
-        const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM)+(surfaceCm/semifinishingSetupTimePerCM);
-
-        const ProductionOptions = await CalculateKeyProductionProcesses(CalcKeyProductionObj,finishingTimeMinutes);
-        const lowerOption = await SelectLowerOption(ProductionOptions,part.PartInfo.KeyMachine);
-        const keyProcesses=[];
-
-        if(lowerOption!=null){
-
-        for(let i=0;i<lowerOption.Processes.length;i++){
-            let process=lowerOption.Processes[i];
-            keyProcesses.push(process);
-        
+        let partData=[];
+        if (fs.existsSync(part.FilePath)) {
+            partData=fs.readFileSync(part.FilePath, "utf8").split("\r\n");
+        } 
+        else {
+            console.log('file not found! ' + part.PN);
+            resolve(null);
         }
-    }else{
-        console.log("No Key machine procees option");
-    }
+      
+            const circlesArr = await GetCirclesArr(partData, part.PN,part.BoundingInfo.MiddlePoint);
+            SaveAll(circlesArr);
+            const featsArr = await GetFeatArr(circlesArr,part.PN,part.BoundingInfo);
+            SaveAll(featsArr);
+            const directionArr = await GetDirectionsArr(featsArr,part.PN,part.BoundingInfo);
+            SaveAll(directionArr);
+            const AroundAxisArr = await GetAroundAxis(directionArr,part.PN);
+            SaveAll(AroundAxisArr);
 
-        const Calculation= new PartCalculation({
-            PN:part.PN,
-            MD:directionArr.length,
-            DirectionStr:directionString,
-            FeatursNumber:totalFeats,
-            AroundAxisNumber:AroundAxisArr.length,
-            AroundAxises:AroundAxisArr,
-            KeyProductionProcesses:keyProcesses
-        });
+            let totalFeats=0;
+            directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
+            let directionString=GetAsString(directionArr);
 
-        resolve(Calculation);
+            const CalcKeyProductionObj={
+                PN:part.PN,
+                directions:directionArr,
+                complexityLevel:part.ComplexityLevel,
+                aroundAxis:AroundAxisArr
+            };
 
+            const finishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
+            const semifinishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
+
+            const surface=part.BoundingInfo.Surface;
+            const surfaceCm=(surface/values.UnitConvert.Mm2ToCm2);
+            const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM)+(surfaceCm/semifinishingSetupTimePerCM);
+
+            const ProductionOptions = await CalculateKeyProductionProcesses(CalcKeyProductionObj,finishingTimeMinutes);
+            const lowerOption = await SelectLowerOption(ProductionOptions,part.PartInfo.KeyMachine);
+            const keyProcesses=[];
+
+            if(lowerOption!=null){
+
+            for(let i=0;i<lowerOption.Processes.length;i++){
+                let process=lowerOption.Processes[i];
+                keyProcesses.push(process);
+            
+            }
+        }else{
+            // console.log("No Key machine procees option");
+        }
+
+            const Calculation= new PartCalculation({
+                PN:part.PN,
+                MD:directionArr.length,
+                DirectionStr:directionString,
+                FeatursNumber:totalFeats,
+                AroundAxisNumber:AroundAxisArr.length,
+                AroundAxises:AroundAxisArr,
+                KeyProductionProcesses:keyProcesses
+            });
+
+            resolve(Calculation);
+        
 });
 
 const CalculateKeyProductionProcesses=(obj,finishingTime)=>
@@ -331,13 +339,17 @@ new Promise(async resolve =>{
 
 const SelectLowerOption=(ProductionOptions,keyMachine)=>
 new Promise(async resolve =>{
-
+    let productionProcessKeyMachine=[];
     if(ProductionOptions.length==1) resolve(ProductionOptions[0]);
-    
     else{
-    let productionProcessKeyMachine=ProductionOptions.filter((op)=>{
-        if(op.KeyMachine==keyMachine) return op;
-    });
+        if(keyMachine=="-"){
+            productionProcessKeyMachine=ProductionOptions;
+        }
+        else{
+             productionProcessKeyMachine=ProductionOptions.filter((op)=>{
+                if(op.KeyMachine==keyMachine) return op;
+            });
+        }   
     let lowerOption=Math.min(...productionProcessKeyMachine.map(item => item.Cost));
 
     let SelectedOption=ProductionOptions.filter((op)=>{
@@ -883,9 +895,7 @@ new Promise(async resolve =>{
             //  console.log("Axis Y is blocked");
             }
             else{
- 
-             console.log("Can Remove Y direction")
-         }
+          }
         }
 
          if(AxisZ.length>1){
@@ -1322,7 +1332,7 @@ const CreateFeat=(circelObj,pn,index,bounding)=>
                                     maxRadius=MaxRadiusArr[0].Radius;
                                     type='HOLE';
                                     // direction=MaxRadiusArr[0].AxisB;
-                                    direction=getFeatDirect(sortedArray[0],sortedArray[0].AxisB,middlePoint);
+                                    direction=getFeatDirect(MaxRadiusArr[0],MaxRadiusArr[0].AxisB,middlePoint);
 
                                 }
                                 else{

@@ -30,7 +30,7 @@ const PartCalculation = require("../Model/PartCalculation");
 const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CRawMaterial.csv';
 const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CMRR.csv';
 const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/SurfaceTreatment.csv';
-const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/Input100.csv';
+const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/Input.csv';
 const testFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/100PartsMetaData.csv';
 
 //Files
@@ -138,9 +138,9 @@ const ReadInputFileScript = async (req, res, next) => {
         let row=el.split(",");
         let p=row[ColumnsInputFile.PN];
         let index=row[ColumnsInputFile.Index];
-        if(p!="Pn" && p!=""){
+        if(p!="Part Number" && p!=""){
 
-            console.log("Calculate : "+part.PN+"............"+index+" / "+partsCount);
+            console.log("Calculate : "+p+"............"+index+" / "+partsCount);
 
             const part=new Part({
                 PN:row[ColumnsInputFile.PN],
@@ -187,37 +187,49 @@ const ReadInputFileScript = async (req, res, next) => {
 
             part.PartInfo=partInfo;
             const Calculation=await FileAnalysis.CalculateKeyMachineProcesses(part);
-            part.PartCalculation=Calculation;
-            const productionProcesses=await AlgoController.CalculateProductionScript(part,Calculation.KeyProductionProcesses);
-            SaveAll(productionProcesses);
+            if(Calculation!=null){
+                part.PartCalculation=Calculation;
+                const productionProcesses=await AlgoController.CalculateProductionScript(part,Calculation.KeyProductionProcesses);
+                SaveAll(productionProcesses);
 
-            if (productionProcesses != null) {
-                    part.ProductionProcesses=productionProcesses;
-                    part.Cost=await AlgoController.CalculateCost(part);
-                    part.LT=AlgoController.CalculateLT(part);
-                    part.BatchTime=AlgoController.CalculateBatchLT(part);
-                    part.BatchCost=AlgoController.CalculateBatchPrice(part);
+                if (productionProcesses != null) {
+                        part.ProductionProcesses=productionProcesses;
+                        part.Cost=await AlgoController.CalculateCost(part);
+                        part.LT=AlgoController.CalculateLT(part);
+                        part.BatchTime=AlgoController.CalculateBatchLT(part);
+                        part.BatchCost=AlgoController.CalculateBatchPrice(part);
 
-                    let rughingTime=0;
-                    let finishingTime=0;
+                        let rughingTime=0;
+                        let finishingTime=0;
+                        
+                        // ## If no key machine in input file (-)
+                        let keyMachine='-';   
+                        let expensiveMachine=0;
 
-                    for(let i=0;i<productionProcesses.length;i++){
-                        let proc=productionProcesses[i];
-                        if(proc.ProcessName=='Roughing'){
-                            rughingTime+=proc.Time;                        
+                        for(let i=0;i<productionProcesses.length;i++){
+                            let proc=productionProcesses[i];
+                            if(proc.ProcessName=='Roughing'){
+                                rughingTime+=proc.Time;                        
+                            }
+                            else{
+                                finishingTime=proc.Time;
+                                if(proc.Cost>expensiveMachine){
+                                    expensiveMachine=proc.Cost;
+                                    keyMachine=proc.Machine;
+                                }
+                            }
                         }
-                        else{
-                            finishingTime=proc.Time;
+
+                        part.RoughingMinuets=rughingTime;
+                        part.FinishingMinuets=finishingTime;
+
+                        if(part.PartInfo.KeyMachine=='-'){
+                            part.PartInfo.KeyMachine=keyMachine;
+                            console.log('KeyMachine Calculated');
                         }
-                    }
-
-                    part.RoughingMinuets=rughingTime;
-                    part.FinishingMinuets=finishingTime;
-
-
-                    arr.push(part);
+                        arr.push(part);
+                }
             }
-
         }
     }
 

@@ -20,7 +20,7 @@ const CalculateProduction=async (part)=>{
          if(roughingSetupNumber>0){
             const roughingTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
             const mrrVolum =GetPartMrrNumber(part.BoundingInfo);
-            const mrrVolumCm=(mrrVolum/values.UnitConvert.MmToCm)
+            const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
             const roughingTime = mrrVolumCm/roughingTimePerCM;
             const process=ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber);
             process.Index=processIndex;
@@ -87,7 +87,7 @@ const CalculateProduction=async (part)=>{
     return partProductionProcess;
 }
 const CalculateProductionScript=async (part,keyProcesses)=>{
-    console.log("CalculateProduction : "+part.PN);
+    // console.log("CalculateProduction : "+part.PN);
 
     const partProductionProcess=[];
     let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
@@ -102,7 +102,7 @@ const CalculateProductionScript=async (part,keyProcesses)=>{
      if(roughingSetupNumber>0){
         const roughingTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
         const mrrVolum =GetPartMrrNumber(part.BoundingInfo);
-        const mrrVolumCm=(mrrVolum/values.UnitConvert.MmToCm)
+        const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
         const roughingTime = mrrVolumCm/roughingTimePerCM;
         const process=ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber);
         process.Index=processIndex;
@@ -138,15 +138,21 @@ const CalculateProductionScript=async (part,keyProcesses)=>{
         processIndex++;
     }
 
-    for(let i=0;i<keyProcesses.length;i++){
-        let keyProcess=keyProcesses[i];
-        keyProcess.PN=part.PN;
-        keyProcess.Index=processIndex;
-        processIndex++;
-        partProductionProcess.push(keyProcess)
-    }
+    if(keyProcesses==null){
+        // console.log("keyProcesses is Null")
+        return partProductionProcess;
 
-return partProductionProcess;
+    }
+    else{
+        for(let i=0;i<keyProcesses.length;i++){
+            let keyProcess=keyProcesses[i];
+            keyProcess.PN=part.PN;
+            keyProcess.Index=processIndex;
+            processIndex++;
+            partProductionProcess.push(keyProcess)
+        }
+       return partProductionProcess;
+    }
 }
 function GetPartSTR(part){
 
@@ -156,38 +162,40 @@ function GetPartSTR(part){
     if(part.RawMaterial.Material=='Aluminum'){
         if(part.ComplexityLevel==0){
             if(part.BoundingInfo.Size=='Small'){
-                if(mrrPrecentage>values.MrrGroupPracentage.VeryHighSmall){
+                if(mrrPrecentage>values.StrCondition.VeryHighSmall){
                     str=true;
                 }
             }
             else{
-                if(mrrPrecentage>values.MrrGroupPracentage.VeryHeighMedium){
+                if(mrrPrecentage>values.StrCondition.VeryHeighMedium){
                     str=true;
                 }
             }
         }
         if(part.ComplexityLevel==1){
-            if(part.BoundingInfo.Size=='Medium' || part.BoundingInfo.Size=='Small'){
-                if(mrrPrecentage>values.MrrGroupPracentage.HighMedium){
+            if(part.BoundingInfo.Size=='Small'){
+                if(mrrPrecentage>values.StrCondition.HighSmall){
+                    str=true;
+                }
+            }
+            if(part.BoundingInfo.Size=='Medium'){
+                if(mrrPrecentage>values.StrCondition.HighMedium){
                     str=true;
                 }
             }
             if(part.BoundingInfo.Size=='Large'){
-                if(mrrPrecentage>values.MrrGroupPracentage.HighLarge){
+                if(mrrPrecentage>values.StrCondition.HighLarge){
                     str=true;
                 }
             }
         }
         if(part.ComplexityLevel==2){
             if(part.BoundingInfo.Size=='Large'){
-                if(mrrPrecentage>values.MrrGroupPracentage.MiddleLarge){
+                if(mrrPrecentage>values.StrCondition.MiddleLarge){
                     str=true;
                 }
             }
         }
-    }
-    if(str){
-        console.log('# str is True '+part.PN);
     }
 
     return str;
@@ -300,10 +308,6 @@ function GetPartGrossVolume(L,W,H){
     let wlGross=w+values.RmBoundingBuffer;
     let hGross=h+values.RmBoundingBuffer;
 
-    // let lGross=l+((l*values.RmBoundingBuffer)/100);
-    // let wlGross=w+((w*values.RmBoundingBuffer)/100);
-    // let hGross=h+((h*values.RmBoundingBuffer)/100);
-
     let Val=lGross*wlGross*hGross;
     return Val;
 }
@@ -319,7 +323,7 @@ function GetPartMaterialWeight(part){
     let l=parseFloat(part.BoundingInfo.L)+values.RmBoundingBuffer;
     let h=parseFloat(part.BoundingInfo.H)+values.RmBoundingBuffer;
     let netWeighMM=w/10*l/10*h/10;
-    let materialWeight=(netWeighMM/values.UnitConvert.MmToCm)*part.RawMaterial.Density;
+    let materialWeight=(netWeighMM/values.UnitConvert.Mm3ToCm3) * part.RawMaterial.Density;
     return materialWeight;
 
 }
@@ -404,6 +408,13 @@ const GetMrrTimeMinutes = async (material,size,processName)=>{
         if(docs.length>0){
             let value = docs[0].Lt;
             return value;
+        }
+        else{
+            if(docs.length==0){
+                let value =1;
+                console.log("#Error: Material notFound in CMRR table");
+                return value;
+            }
         }
     }
 }             
