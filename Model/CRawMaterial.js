@@ -7,7 +7,6 @@ const RawMaterialSchema = new mongoose.Schema({
     Material: {
         type: String,
         // enum:['Aluminum'],
-
     },
     Density: {
         type: Number,
@@ -21,7 +20,6 @@ const RawMaterialSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
-    //Volkoop: Material property.
     MrrOptions:{
         type:[Object]
     }, 

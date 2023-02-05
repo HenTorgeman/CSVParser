@@ -1,6 +1,9 @@
 
 const CMrr = require("../Model/CMrr");
 const ProductionProcesses = require("../Model/ProductionSetUp");
+const KeyProcessesOption = require("../Model/KeyProcessesOption");
+
+
 const values = require("../SavedValues.json");
 
 function CreateRoughingProcess(processName,minutes,processNumber){
@@ -45,8 +48,6 @@ function Create4AxisProcess(processName,minutes,processNumber){
 
       
 }
-
-
 function Create5AxisProcess(processName,minutes,processNumber){
     let cost=minutes*values.Machines["Machine5AxisCostMin"];
     const productionProcess=new ProductionProcesses ({
@@ -60,6 +61,17 @@ function Create5AxisProcess(processName,minutes,processNumber){
     return productionProcess;
 
 }
+
+function CreateOption(pn,keyMachine,list){
+    const option = new KeyProcessesOption({
+        PN:pn,
+        Processes:list,
+        KeyMachine:keyMachine
+    });
+    return option;
+}
+
+
 //#Pulling db data
 const GetProcessCost=(material,size,processName)=>
     new Promise(async resolve=>{
@@ -81,6 +93,7 @@ module.exports = {
     CreateRoughingProcess,
     Create3AxisProcess,
     Create4AxisProcess,
-    Create5AxisProcess
+    Create5AxisProcess,
+    CreateOption
 
 };

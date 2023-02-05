@@ -8,13 +8,13 @@ const BoundingSchema = new mongoose.Schema({
         type:Object
     },
     W:{
-        type:String
+        type:Number
     },
     L:{
-        type:String
+        type:Number
     },
     H:{
-        type:String
+        type:Number
     },
     WAxis:{
         type:String
@@ -45,8 +45,11 @@ const BoundingSchema = new mongoose.Schema({
         type:String,
         enum:['CUBE','PLATE']
     },
-    MaterialWeight:{
+    ChargableWeight:{
         type:Number
+    },
+    SurfaceTreatment:{
+        type:String,
     }
 });
 module.exports = mongoose.model("Bounding", BoundingSchema);

@@ -38,9 +38,17 @@
 {
     "Dm3ToMm3":1000000,
     "Dm2ToMm2":10000,
-    "MmToCm":1000,
+    "Mm3ToCm3":1000,
+    "Mm2ToCm2":100,
     "Dm3ToCM3":1000,
     "Dm2ToCM2":1000
+},
+"Shipping":{
+    "China":{
+        "NetToGrossWeight":1.25,
+        "PackingCostPerKG":2,
+        "DomesticDeliveryCostPerKg":6
+    }
 }
 
 }

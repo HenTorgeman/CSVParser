@@ -12,6 +12,7 @@ function GetRow(fileArr, index, callback) {
 }
 
 
-exports = {
+
+module.exports = {
     GetRow,
-}; 
+};

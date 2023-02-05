@@ -17,10 +17,5 @@
     "NetVolume":15,
     "Surface":16,
     "KeyMachine":17,
-    "KeyMachineSetUps":18,
-    "OtherSetups":19,
-    "AroundAxis":20,
-    "MD":21,
-    "HolesThreds":22
-
+    "SurfaceTreatment":21
 }

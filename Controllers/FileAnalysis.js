@@ -5,176 +5,193 @@ const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
 const Part = require("../Model/Part");
 const e = require("express");
+const fs = require("fs");
+
+const AroundAxis = require("../Model/AroundAxis");
 const Bounding = require("../Model/BoundingInfo");
 const Machine = require("../Model/SetUp");
 const values = require("../SavedValues.json");
 const PartCalculation = require("../Model/PartCalculation");
 const CalcController = require("../Controllers/FileAnalysis");
-
-const AroundAxis = require("../Model/AroundAxis");
+const ProductionProcessesController = require("../Controllers/ProductionProcesses");
+const PriceAlgorithmController = require("../Controllers/PriceAlgorithm");
 
 var passCircelArr = [];
 var featIndex=0;
 
-
-
-const CalculatePart=(part)=>
+const CalculateKeyMachineProcesses=(part)=>
     new Promise(async resolve =>{
         let partData = fs.readFileSync(part.FilePath, "utf8").split("\r\n");                   
         
-        const circlesArr = await CalcController.GetCirclesArr(partData, pn,part.BoundingBox.MiddlePoint);
-        saveAll(circlesArr);
-        const featsArr = await CalcController.GetFeatArr(circlesArr,pn,part.BoundingBox);
-        saveAll(featsArr);
-        const directionArr = await CalcController.GetDirectionsArr(featsArr,pn,part.BoundingBox);
-        saveAll(directionArr);
-        // const FiltteredDirectionArr = await CalcController.ReduceDirections(directionArr,pn,bounding);
-        //const aroundAxisNumber = await CalcController.CalculateAroundAxisNumber(directionArr,pn,part.BoundingBox);
-        const AroundAxisArr = await CalcController.GetAroundAxis(directionArr,pn);
-        saveAll(AroundAxisArr);
+        const circlesArr = await GetCirclesArr(partData, part.PN,part.BoundingInfo.MiddlePoint);
+        SaveAll(circlesArr);
+        const featsArr = await GetFeatArr(circlesArr,part.PN,part.BoundingInfo);
+        SaveAll(featsArr);
+        const directionArr = await GetDirectionsArr(featsArr,part.PN,part.BoundingInfo);
+        SaveAll(directionArr);
+        const AroundAxisArr = await GetAroundAxis(directionArr,part.PN);
+        SaveAll(AroundAxisArr);
 
-        const obj={
-            PN:pn,
+        let totalFeats=0;
+        directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
+        let directionString=GetAsString(directionArr);
+
+        const CalcKeyProductionObj={
+            PN:part.PN,
             directions:directionArr,
-            complexityLevel:complexity,
+            complexityLevel:part.ComplexityLevel,
             aroundAxis:AroundAxisArr
         };
 
-        const machineArr = await CalcController.CalculateKeyMachineOptions(obj);
-        saveAll(machineArr);
+        const finishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
+        const semifinishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
 
-        //## Calc how many feats in part.
-        let totalFeats=0;
-        directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
+        const surface=part.BoundingInfo.Surface;
+        const surfaceCm=(surface/values.UnitConvert.MmToCm);
+        const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM)+(surfaceCm/semifinishingSetupTimePerCM);
 
-        //## Print the direction string
-        let directionString=GetAsString(directionArr);
-        let ms=directionArr.length;
+        const ProductionOptions = await CalculateKeyProductionProcesses(CalcKeyProductionObj,finishingTimeMinutes);
+        const lowerOption = await SelectLowerOption(ProductionOptions,part.PartInfo.KeyMachine);
+        const keyProcesses=[];
 
-        //## Print the correct sate
-        if(ms!=originMs) {mistakeRange++;
-            mistakeList.push(pn);
+        if(lowerOption!=null){
+
+        for(let i=0;i<lowerOption.Processes.length;i++){
+            let process=lowerOption.Processes[i];
+            keyProcesses.push(process);
+        
         }
+    }else{
+        console.log("No Key machine procees option");
+    }
 
         const Calculation= new PartCalculation({
-            PN:pn,
-            Index:index,
+            PN:part.PN,
             MD:directionArr.length,
-            FeatursNumber:totalFeats,
-            AroundAxisNumber:aroundAxisNumber,
-            AroundAxises:aroundAxisNumber
-        });
-
-
-        var part = Part({
-            PN: pn,
-            index: index,
-            FilePath: path,
-            Directions:directionArr,
             DirectionStr:directionString,
-            MS:ms,
-            OriginalMS:originMs,
             FeatursNumber:totalFeats,
-            BoundingBox:bounding,
-            AroundAxisNumber:aroundAxisNumber,
-            ComplexityLevel:complexity,
-            MachineOptions:machineArr,
+            AroundAxisNumber:AroundAxisArr.length,
+            AroundAxises:AroundAxisArr,
+            KeyProductionProcesses:keyProcesses
         });
-        resolve(circleArr);
+
+        resolve(Calculation);
+
 });
 
-const CalculateKeyProductionProcesses=(obj)=>
+const CalculateKeyProductionProcesses=(obj,finishingTime)=>
 new Promise(async resolve =>{
 
     let pn=obj.PN;
     let directionArr=obj.directions;
     let complexity=obj.complexityLevel;
-    let aroundAxisNumber=obj.aroundAxis;
+    let aroundAxisNumber=obj.aroundAxis.length;
     let msNumber=directionArr.length;
-    // let machineOptions=[];
     let Options=[];
-
-    // const option = new KeyProcessesOption({
-    //     PN:pn,
-
-    // });
-    //KeyProcessesOptionSchema
     
     if(msNumber<=2)
     {       
         let Processes=[];
-        const productionProcess=new ProductionProcesses ({
-                ProcessName:'Finishing',
-                Type:'Key',
-                Machine:'3 Axis',
-        });
-        Processes.push(productionProcess);
+        let process= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime,2);
+        Processes.push(process);
 
-        const option = new KeyProcessesOption({
-            PN:pn,
-            Processes:Processes,
-            KeyMachine:'3 Axis'
-        });
+        let option= ProductionProcessesController.CreateOption(pn,'3 Axis',Processes);
         Options.push(option);
-    // resolve(machineOptions);
     }
     else{
-        // # MD = 2+
-        //complexity 3 : Low      
         if(complexity==3)
         {            
-
             if(aroundAxisNumber==1){
+                let Processes3Axis=[];
+                let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime,msNumber);
 
-                //let machine3=creatiMachine3(pn,msNumber);
-
-                let Processes=[];
-                for(let i=0;i<msNumber;i++){
-                    const productionProcess=new ProductionProcesses ({
-                        ProcessName:'Finishing',
-                        Type:'Key',
-                        Machine:'3 Axis',
-                    });
-                    Processes.push(productionProcess);
-
-                }
-                const option = new KeyProcessesOption({
-                    PN:pn,
-                    Processes:Processes,
-                    KeyMachine:'3 Axis'
-                });
+                Processes3Axis.push(process3Axis);
+                let option= ProductionProcessesController.CreateOption(pn,'3 Axis',Processes3Axis);
                 Options.push(option);
 
-                // let machine4=creatiMachine4(pn,1);
+                let Processes4Axis=[];
+                let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,1);
 
+                Processes4Axis.push(process4Axis);
+                let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                Options.push(option4Axis);
 
-
-
-                    let machine4=creatiMachine4(pn,1);
-                    machineOptions.push(machine3);
-                    machineOptions.push(machine4);
 
             }
-            if(aroundAxisNumber==2){                
-                    let machine3=creatiMachine3(pn,msNumber);
-                    let machine4=creatiMachine4(pn,2);
-                    let machine5=creatiMachine5(pn,1);
+            if(aroundAxisNumber==2){
+                //Option 1 3 Axis  -> machine3=creatiMachine3(pn,msNumber);
+                let Processes3Axis=[];
+                let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime,msNumber);
 
-                    machineOptions.push(machine3);
-                    machineOptions.push(machine4);
-                    machineOptions.push(machine5);
+                Processes3Axis.push(process3Axis);
+                let option3Axis= ProductionProcessesController.CreateOption(pn,'3 Axis',Processes3Axis);
+                Options.push(option3Axis);
 
+                //Option 2 : 4 Axis * 2 -> machine4=creatiMachine4(pn,2);
+                if(obj.aroundAxis[1].Directions.length>2){
+                    let Processes4Axis=[];
+                    let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,2);
+
+                    Processes4Axis.push(process4Axis);
+                    let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                    Options.push(option4Axis);
+    
+                }
+                 //Option 2.1 : 4 Axis*1 3 Axis*msNumber
+                else{
+                    let Processes3Axis=[];
+                    let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime/2,obj.aroundAxis[1].Directions.length);
+                    let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime/2,1);
+
+                    Processes3Axis.push(process3Axis);
+                    Processes3Axis.push(process4Axis);
+
+                    let option3Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes3Axis);
+                    Options.push(option3Axis);
+                }
+            
+                 //Option 5 : 5 Axis *1 -> machine5=creatiMachine5(pn,1);
+                 let Processes5Axis=[];
+                 let process5Axis= ProductionProcessesController.Create5AxisProcess('Finishing',finishingTime,1);
+                 Processes5Axis.push(process5Axis);
+                 let option5Axis= ProductionProcessesController.CreateOption(pn,'5 Axis',Processes5Axis);
+                 Options.push(option5Axis);
+            
             }
-            if(aroundAxisNumber==3){    
-                
-                let machine3=creatiMachine3(pn,msNumber);
-                let machine4=creatiMachine4(pn,3);
-                let machine5=creatiMachine5(pn,1);
+            if(aroundAxisNumber==3){
+            //Option 1 3 Axis  -> machine3=creatiMachine3(pn,msNumber);
+            let Processes3Axis=[];
+            let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime,msNumber);
+            Processes3Axis.push(process3Axis);
+            let option3Axis= ProductionProcessesController.CreateOption(pn,'3 Axis',Processes3Axis);
+            Options.push(option3Axis);
 
-                machineOptions.push(machine3);
-                machineOptions.push(machine4);
-                machineOptions.push(machine5);
-               
+                //Option 2 : 4 Axis * 2 -> machine4=creatiMachine4(pn,2);   
+                if(obj.aroundAxis[2].Directions.length>2){
+                    let Processes4Axis=[];
+                    let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,3);
+                    Processes4Axis.push(process4Axis);
+                    let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                    Options.push(option4Axis);
+                }
+                 //Option 2.1 : 4 Axis*1 3 Axis*msNumber
+                else{
+                    let Processes3Axis=[];
+                    let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime/3,obj.aroundAxis[2].Directions.length);
+                    let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',((finishingTime/3)*2),2);
+                  
+                    Processes3Axis.push(process3Axis);
+                    Processes3Axis.push(process4Axis);
+                    let option3Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes3Axis);
+                    Options.push(option3Axis);
+                }
+            
+                 //Option 5 : 5 Axis *1 -> machine5=creatiMachine5(pn,1);
+                 let Processes5Axis=[];
+                 let process5Axis= ProductionProcessesController.Create5AxisProcess('Finishing',finishingTime,1);
+                 Processes5Axis.push(process5Axis);
+                 let option5Axis= ProductionProcessesController.CreateOption(pn,'5 Axis',Processes5Axis);
+                 Options.push(option5Axis);
             }
         }
         //complexity 2 : Medium
@@ -182,29 +199,72 @@ new Promise(async resolve =>{
         {            
 
             if(aroundAxisNumber==1){
-                    let machine3=creatiMachine3(pn,msNumber);
-                    let machine4=creatiMachine4(pn,1);
+                //let machine3=creatiMachine3(pn,msNumber);
+                let Processes3Axis=[];
+                let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime,msNumber);
+                Processes3Axis.push(process3Axis);
+                let option= ProductionProcessesController.CreateOption(pn,'3 Axis',Processes3Axis);
+                Options.push(option);
 
-                    machineOptions.push(machine3);
-                    machineOptions.push(machine4);
+                // let machine4=creatiMachine4(pn,1);
 
+                let Processes4Axis=[];
+                let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,1);
+                Processes4Axis.push(process4Axis);
+                let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                Options.push(option4Axis);            
             }
-            if(aroundAxisNumber==2){                
-                    let machine3=creatiMachine3(pn,msNumber);
-                    let machine4=creatiMachine4(pn,2);
-                    let machine5=creatiMachine5(pn,1);
+            if(aroundAxisNumber==2){
+                //Option 1 3 Axis  -> machine3=creatiMachine3(pn,msNumber);
+                let Processes3Axis=[];
+                let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime,msNumber);
+                Processes3Axis.push(process3Axis);
+                let option3Axis= ProductionProcessesController.CreateOption(pn,'3 Axis',Processes3Axis);
+                Options.push(option3Axis);
 
-                    machineOptions.push(machine3);
-                    machineOptions.push(machine4);
-                    machineOptions.push(machine5);
+                //Option 2 : 4 Axis * 2 -> machine4=creatiMachine4(pn,2);   
+                if(obj.aroundAxis[1].Directions.length>2){
+                    let Processes4Axis=[];
+                    let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,2);
+                    Processes4Axis.push(process4Axis);
+                    let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                    Options.push(option4Axis);
+    
+                }
+                 //Option 2.1 : 4 Axis*1 3 Axis*msNumber
+                else{
+                    let Processes3Axis=[];
+                    let process3Axis= ProductionProcessesController.Create3AxisProcess('Finishing',finishingTime/2,obj.aroundAxis[1].Directions.length);
+                    let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime/2,1);
+                    Processes3Axis.push(process3Axis);
+                    Processes3Axis.push(process4Axis);
+                    let option3Axis= ProductionProcessesController.CreateOption(pn,'3 Axis',Processes3Axis);
+                    Options.push(option3Axis);
+                }
+            
+                 //Option 5 : 5 Axis *1 -> machine5=creatiMachine5(pn,1);
+                 let Processes5Axis=[];
+                 let process5Axis= ProductionProcessesController.Create5AxisProcess('Finishing',finishingTime,1);
+                 Processes5Axis.push(process5Axis);
+                 let option5Axis= ProductionProcessesController.CreateOption(pn,'5 Axis',Processes5Axis);
+                 Options.push(option5Axis);
 
             }
             if(aroundAxisNumber==3){    
-                let machine4=creatiMachine4(pn,3);
-                let machine5=creatiMachine5(pn,1);
+                //Option 2 : 4 Axis * 2 -> machine4=creatiMachine4(pn,2);   
+                    let Processes4Axis=[];
+                    let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,3);
+                    Processes4Axis.push(process4Axis);
+                    let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                    Options.push(option4Axis);
+            
+                 //Option 5 : 5 Axis *1 -> machine5=creatiMachine5(pn,1);
 
-                machineOptions.push(machine4);
-                machineOptions.push(machine5);
+                 let Processes5Axis=[];
+                 let process5Axis= ProductionProcessesController.Create5AxisProcess('Finishing',finishingTime,1);
+                 Processes5Axis.push(process5Axis);
+                 let option5Axis= ProductionProcessesController.CreateOption(pn,'5 Axis',Processes5Axis);
+                 Options.push(option5Axis);
                 
             }
         }
@@ -212,26 +272,79 @@ new Promise(async resolve =>{
         if(complexity<=1)
         {            
             if(aroundAxisNumber==1){
-                    let machine4=creatiMachine4(pn,1);
-                    let machine5=creatiMachine5(pn,1);
 
-                    machineOptions.push(machine5);
-                    machineOptions.push(machine4);
+                //Option 2 : 4 Axis * 2 -> machine4=creatiMachine4(pn,2);   
+                let Processes4Axis=[];
+                let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,1);
+                Processes4Axis.push(process4Axis);
+                let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                Options.push(option4Axis);
+
+                //Option 5 : 5 Axis *1 -> machine5=creatiMachine5(pn,1);
+
+                let Processes5Axis=[];
+                let process5Axis= ProductionProcessesController.Create5AxisProcess('Finishing',finishingTime,1);
+                Processes5Axis.push(process5Axis);
+                let option5Axis= ProductionProcessesController.CreateOption(pn,'5 Axis',Processes5Axis);
+                Options.push(option5Axis);
+
             }
             if(aroundAxisNumber==2){                
-                    let machine4=creatiMachine4(pn,2);
-                    let machine5=creatiMachine5(pn,1);
+                let Processes4Axis=[];
+                let process4Axis= ProductionProcessesController.Create4AxisProcess('Finishing',finishingTime,2);
+                Processes4Axis.push(process4Axis);
+                let option4Axis= ProductionProcessesController.CreateOption(pn,'4 Axis',Processes4Axis);
+                Options.push(option4Axis);
+        
+             //Option 5 : 5 Axis *1 -> machine5=creatiMachine5(pn,1);
 
-                    machineOptions.push(machine4);
-                    machineOptions.push(machine5);
+                let Processes5Axis=[];
+                let process5Axis= ProductionProcessesController.Create5AxisProcess('Finishing',finishingTime,1);
+                Processes5Axis.push(process5Axis);
+                let option5Axis= ProductionProcessesController.CreateOption(pn,'5 Axis',Processes5Axis);
+                Options.push(option5Axis);
             }
             if(aroundAxisNumber==3){    
-                let machine5=creatiMachine5(pn,1);
-                machineOptions.push(machine5);
+                let Processes5Axis=[];
+                let process5Axis= ProductionProcessesController.Create5AxisProcess('Finishing',finishingTime,1);
+                Processes5Axis.push(process5Axis);
+                let option5Axis= ProductionProcessesController.CreateOption(pn,'5 Axis',Processes5Axis);
+                Options.push(option5Axis);
             }
         }
-        resolve(machineOptions)
     }
+
+    for(let i=0;i<Options.length;i++){
+        let op=Options[i];
+        let cost=0;
+        for(let j=0;j<op.Processes.length;j++){
+            let proc=op.Processes[j];
+            cost+=proc.Cost;
+        }
+
+        Options[i].Cost=cost;
+    }
+
+    resolve(Options)
+
+});
+
+const SelectLowerOption=(ProductionOptions,keyMachine)=>
+new Promise(async resolve =>{
+
+    if(ProductionOptions.length==1) resolve(ProductionOptions[0]);
+    
+    else{
+    let productionProcessKeyMachine=ProductionOptions.filter((op)=>{
+        if(op.KeyMachine==keyMachine) return op;
+    });
+    let lowerOption=Math.min(...productionProcessKeyMachine.map(item => item.Cost));
+
+    let SelectedOption=ProductionOptions.filter((op)=>{
+        if(op.Cost==lowerOption) return op;
+    });
+    resolve(SelectedOption[0]);
+}
 });
 
 //-------------MAIN FUNCTION----------------------------------------------
@@ -240,7 +353,6 @@ const GetAroundAxis=(directionArr,pn)=>
     new Promise(async resolve =>{
         
         let absDirctionList=[];
-        let result=0;
         let aroundAxisObjects=[];
         
         directionArr.map((doc) => {
@@ -262,12 +374,13 @@ const GetAroundAxis=(directionArr,pn)=>
 
             let abs1=absDirctionList[0];
             let direction1=directionArr.filter((e)=>{
-                if(e.AbsulteAxisB==abs1) return e;
+                if(e.AbsAxis==abs1) return e;
             });
             let direction2=directionArr.filter((e)=>{
-                if(e.AbsulteAxisB!=abs1) return e;
+                if(e.AbsAxis!=abs1) return e;
             });
 
+            
             const axisObj1=new AroundAxis({
                 PN:pn,
                 Directions:direction1,
@@ -278,10 +391,14 @@ const GetAroundAxis=(directionArr,pn)=>
                 Directions:direction2,
                 NumberOfMD:direction2.length
             });
-            aroundAxisObjects.push(axisObj1);
-            aroundAxisObjects.push(axisObj2);
-
-        
+            if(direction1.length>direction2.length){
+                aroundAxisObjects[0]=axisObj1;
+                aroundAxisObjects[1]=axisObj2;
+            }
+            else{
+                aroundAxisObjects[0]=axisObj2;
+                aroundAxisObjects[1]=axisObj1;
+            }
         }
         
         if(absDirctionList.length>3){ 
@@ -290,13 +407,13 @@ const GetAroundAxis=(directionArr,pn)=>
             let abs2=absDirctionList[1];
 
             let direction1=directionArr.filter((e)=>{
-                if(e.AbsulteAxisB==abs1) return e;
+                if(e.AbsAxis==abs1) return e;
             });
             let direction2=directionArr.filter((e)=>{
-                if(e.AbsulteAxisB==abs2) return e;
+                if(e.AbsAxis==abs2) return e;
             });
             let direction3=directionArr.filter((e)=>{
-                if(e.AbsulteAxisB!=abs2 &&e.AbsulteAxisB!=abs1 ) return e;
+                if(e.AbsAxis!=abs2 &&e.AbsAxis!=abs1 ) return e;
             });
 
             const axisObj1=new AroundAxis({
@@ -314,10 +431,18 @@ const GetAroundAxis=(directionArr,pn)=>
                 Directions:direction3,
                 NumberOfMD:direction3.length
             });
-            aroundAxisObjects.push(axisObj1);
-            aroundAxisObjects.push(axisObj2);
-            aroundAxisObjects.push(axisObj3);
-        }
+
+
+            if(direction1.length>direction2.length){
+                aroundAxisObjects[0]=axisObj1;
+                aroundAxisObjects[1]=axisObj2;
+            }
+            else{
+                aroundAxisObjects[0]=axisObj2;
+                aroundAxisObjects[1]=axisObj1;
+            }
+            aroundAxisObjects[2]=axisObj3;
+    }
         
     resolve(aroundAxisObjects);
 });
@@ -914,8 +1039,6 @@ new Promise(async resolve =>{
 });
 
 
-
-
 //-------------SUB FUNCTION--------------
 
 function creatiMachine3(pn,setupsNumber){
@@ -1498,25 +1621,19 @@ function IsComolexCircle(circel) {
     
 }
 
-function GetGenCircelAxisC(circel) {
-    var axis = "";
-    if (circel.C.x == 1 || circel.C.x == -1) {
-        axis = "X";
+function GetAsString(directionArr){
+    
+    let start='[ ';
+    let end=' ]';
+    let temp='';
+    let str='';
+
+    for(d of directionArr){
+        let axis = d.DirectionAxis;
+        temp=temp.concat(' #',axis);
     }
-    else {
-        if (circel.C.y == 1 || circel.C.y == -1) {
-            axis = "Y";
-        }
-        else {
-            if (circel.C.z == 1 || circel.C.z == -1) {
-                axis = "Z";
-            }
-        }
-    }
-    if(axis=="") {
-        axis =  "Complex";}
-     
-    return axis;
+    str=str.concat(start,temp,end);
+    return str;
 
 }
 
@@ -1527,8 +1644,12 @@ const ClearDB = async (req, res, next) => {
     res.status(200).send("ok");
 }
 
+async function SaveAll(docArray){
+    return Promise.all(docArray.map((doc) => doc.save()));
+}
+
 module.exports = {
-    CalculatePart,
+    CalculateKeyMachineProcesses,
     GetAroundAxis,
     GetCirclesArr,
     GetFeatArr,
@@ -1538,5 +1659,8 @@ module.exports = {
     ReduceDirections,
     CalculateAroundAxisNumber,
     CalculateKeyMachineOptions,
+    CalculateKeyProductionProcesses,
+    GetAsString,
     ClearDB,
+    SaveAll
 };

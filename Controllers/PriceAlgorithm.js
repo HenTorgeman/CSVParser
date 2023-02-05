@@ -1,12 +1,11 @@
-// const Part = require("../Model/Part");
-// const Bounding = require("../Model/BoundingInfo");
-// const Machine = require("../Model/SetUp");
 const CMrr = require("../Model/CMrr");
+const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
+
 const ProcessController = require("../Controllers/ProductionProcesses");
 const values = require("../SavedValues.json");
 
+
 const CalculateProduction=async (part)=>{
-        console.log("CalculateProduction : "+part.PN);
 
         const partProductionProcess=[];
         let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
@@ -62,7 +61,7 @@ const CalculateProduction=async (part)=>{
         const semifinishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
 
         const surface=part.BoundingInfo.Surface;
-        const surfaceCm=(surface/values.UnitConvert.MmToCm);
+        const surfaceCm=(surface/values.UnitConvert.Mm2ToCm2);
         const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM)+(surfaceCm/semifinishingSetupTimePerCM);
         
         //# In script Version : will be based on around axis and around axis secondary.
@@ -87,7 +86,70 @@ const CalculateProduction=async (part)=>{
 
     return partProductionProcess;
 }
+const CalculateProductionScript=async (part,keyProcesses)=>{
+    console.log("CalculateProduction : "+part.PN);
+
+    const partProductionProcess=[];
+    let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
+    let isHolderSetupNeeded=GetPartProcessHolderSetUp(part);
+    let isHolderRemoveSetUpNeeded=GetPartProcessRemoveHolderSetUp(part)
+    // let finishingSetupNumber=part.PartInfo.KeyMachineSetups;
+    // let keyMachine=part.PartInfo.KeyMachine;
+    // let holderCostWithoutSetups=0;
+    let processIndex=0;
+
+    //# Roughing
+     if(roughingSetupNumber>0){
+        const roughingTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
+        const mrrVolum =GetPartMrrNumber(part.BoundingInfo);
+        const mrrVolumCm=(mrrVolum/values.UnitConvert.MmToCm)
+        const roughingTime = mrrVolumCm/roughingTimePerCM;
+        const process=ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber);
+        process.Index=processIndex;
+        process.PN=part.PN;
+        partProductionProcess.push(process);
+        processIndex++;
+     }
+
+    //# ProcessHolder
+        const holderTimePerPart = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Holder');
+        const processHolder= ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,1);
+
+        if(isHolderSetupNeeded==true){
+            processHolder.Index=processIndex;
+            processHolder.PN=part.PN;
+            processIndex++;
+        }
+        else{
+            if(holderTimePerPart>0){
+                processHolder.Lt+=holderTimePerPart;
+                // holderCostWithoutSetups=holderTime*values.Machines["3AxisCostMin"];
+            }
+        }
+        partProductionProcess.push(processHolder);
+
+
+    //# ProcessHolderRemove
+    if(isHolderRemoveSetUpNeeded==true){
+        let process= ProcessController.CreateRoughingProcess('Holder',holderTime,1);
+        process.Index=processIndex;
+        process.PN=part.PN;
+        partProductionProcess.push(process);
+        processIndex++;
+    }
+
+    for(let i=0;i<keyProcesses.length;i++){
+        let keyProcess=keyProcesses[i];
+        keyProcess.PN=part.PN;
+        keyProcess.Index=processIndex;
+        processIndex++;
+        partProductionProcess.push(keyProcess)
+    }
+
+return partProductionProcess;
+}
 function GetPartSTR(part){
+
     let str=false;
     let mrrPrecentage=GetPartMrrPrecentage(part.BoundingInfo);
     
@@ -105,7 +167,7 @@ function GetPartSTR(part){
             }
         }
         if(part.ComplexityLevel==1){
-            if(part.BoundingInfo.Size=='Medium'){
+            if(part.BoundingInfo.Size=='Medium' || part.BoundingInfo.Size=='Small'){
                 if(mrrPrecentage>values.MrrGroupPracentage.HighMedium){
                     str=true;
                 }
@@ -124,14 +186,16 @@ function GetPartSTR(part){
             }
         }
     }
+    if(str){
+        console.log('# str is True '+part.PN);
+    }
 
     return str;
 }
 function GetPartRoughingSetupsNumber(part){
     let setups=0;
-    // let str=GetPartSTR(part);
-    if(part.PartInfo.STR==true){
-        if(part.PartInfo.MD>=6){
+    if(part.PartInfo.STR){
+         if(part.PartCalculation.MD>=6){
             setups=3;
         }
         else{
@@ -189,7 +253,7 @@ function GetPartMrrNumber(boundingInfo)
 function GetPartMrrPrecentage(boundingInfo)
 {
     let MrrNumber=GetPartMrrNumber(boundingInfo);
-    let MrrPrecentage=(boundingInfo.Volum / MrrNumber)*100;
+    let MrrPrecentage=( MrrNumber/boundingInfo.Volum)*100;
     return MrrPrecentage;
 }
 function GetPartSize(L,W,H){
@@ -243,12 +307,41 @@ function GetPartGrossVolume(L,W,H){
     let Val=lGross*wlGross*hGross;
     return Val;
 }
-function GetPartMaterialWeight(L,W,H,price){
+function GetPartChargableWeight(part){
+    let materialWeight=GetPartMaterialWeight(part);
+    let netVolumeDM=part.BoundingInfo.W * part.BoundingInfo.H * part.BoundingInfo.W/values.UnitConvert.Dm3ToMm3;
+    let chargableWeight=Math.max(netVolumeDM/6,materialWeight);
+    return chargableWeight;
 
 }
+function GetPartMaterialWeight(part){
+    let w=parseFloat(part.BoundingInfo.W)+values.RmBoundingBuffer;
+    let l=parseFloat(part.BoundingInfo.L)+values.RmBoundingBuffer;
+    let h=parseFloat(part.BoundingInfo.H)+values.RmBoundingBuffer;
+    let netWeighMM=w/10*l/10*h/10;
+    let materialWeight=(netWeighMM/values.UnitConvert.MmToCm)*part.RawMaterial.Density;
+    return materialWeight;
 
-function CalculateCost(part){
+}
+async function CalculateCost(part){
    let cost=0;
+
+   // # SurfaceTreatment
+    let strObj=await GetSurfaceTreatment(part.BoundingInfo.SurfaceTreatment);
+    if(strObj!=null){
+        let surfaceDM=part.BoundingInfo.Surface/values.UnitConvert.Dm2ToMm2;
+        let surfaceTreatmentCost=surfaceDM*strObj.Cost;
+        cost+=surfaceTreatmentCost;
+    }
+    // # Packing
+    let chargableWeight=part.BoundingInfo.ChargableWeight;
+    let packingCost=chargableWeight*values.Shipping.China.NetToGrossWeight*(values.Shipping.China.DomesticDeliveryCostPerKg+values.Shipping.China.PackingCostPerKG);
+    cost+=packingCost;
+
+    // # Material Price
+    let materialCost=GetPartMaterialWeight(part)*part.RawMaterial.Price;
+    cost+=materialCost;
+
     for(let i=0;i<part.ProductionProcesses.length;i++){
         let process=part.ProductionProcesses[i];
         cost+=process.Cost;
@@ -279,7 +372,6 @@ function CalculateLT(part){
     }
     return cost;
 }
-
 function CalculateBatchLT(part){
      let minuets=0;
       for(let i=0;i<part.ProductionProcesses.length;i++){
@@ -292,13 +384,18 @@ function CalculateBatchLT(part){
      return days;
 }
 
-
 //#Pulling db data
+const GetSurfaceTreatment= async (treatment)=>{
+    const docs =await CSurfaceTreatment.find({ Name:treatment}).exec();
+    if(docs.length==0) return null;
+    else{
+        return docs[0];
+    }
+} 
 
 const GetMrrTimeMinutes = async (material,size,processName)=>{
     const docs =await CMrr.find({ Material:material,Size: size,ProcessName:processName}).exec();
-    let value=null;
-
+    
     if(docs.length>1) {
         console.log("#Error: Duplicate values in CMRR table");
         return null;
@@ -321,13 +418,16 @@ module.exports = {
     GetPartSTR,
     GetPartRoughingSetupsNumber,
     CalculateProduction,
+    CalculateProductionScript,
     GetPartMrrNumber,
     GetPartMrrPrecentage,
     GetMrrTimeMinutes,
     GetPartProcessRemoveHolderSetUp,
     CalcPartRoughingSetupTime,
+    GetPartChargableWeight,
     GetPartProcessHolderTime,
     GetPartFinishingTime,
+    GetSurfaceTreatment,
     CalculateCost,
     CalculateLT,
     CalculateBatchPrice,
