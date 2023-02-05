@@ -1,7 +1,7 @@
 const CMrr = require("../Model/CMrr");
 const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
 
-const ProcessController = require("../Controllers/ProductionProcesses");
+const ProcessController = require("./ProductionProcesses");
 const values = require("../SavedValues.json");
 
 

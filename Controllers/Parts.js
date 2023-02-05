@@ -23,8 +23,8 @@ const values = require("../SavedValues.json");
 
 const fs = require("fs");
 const Util = require("../Utilities");
-const AlgoController = require("./PriceAlgorithm");
-const FileAnalysis = require("./FileAnalysis");
+const AlgoController = require("./Calculation");
+const FileAnalysis = require("./KeyMachineProc");
 const PartCalculation = require("../Model/PartCalculation");
 
 const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CRawMaterial.csv';

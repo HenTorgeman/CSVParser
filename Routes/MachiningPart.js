@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Controller = require("../Controllers/MachiningPart");
+const Controller = require("../Controllers/Parts");
 
 router.post("/ReadInputFile", Controller.ReadInputFile);
 router.post("/ReadInputFileScript", Controller.ReadInputFileScript);

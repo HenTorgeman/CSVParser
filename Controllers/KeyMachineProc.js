@@ -12,9 +12,9 @@ const Bounding = require("../Model/BoundingInfo");
 const Machine = require("../Model/SetUp");
 const values = require("../SavedValues.json");
 const PartCalculation = require("../Model/PartCalculation");
-const CalcController = require("../Controllers/FileAnalysis");
-const ProductionProcessesController = require("../Controllers/ProductionProcesses");
-const PriceAlgorithmController = require("../Controllers/PriceAlgorithm");
+const CalcController = require("./KeyMachineProc");
+const ProductionProcessesController = require("./ProductionProcesses");
+const PriceAlgorithmController = require("./Calculation");
 
 var passCircelArr = [];
 var featIndex=0;
