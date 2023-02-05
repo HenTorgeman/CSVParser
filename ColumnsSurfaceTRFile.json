@@ -1,0 +1,8 @@
+{
+    "Name": 0,
+    "Type":1,
+    "Color":2,
+    "Material":3,
+    "Cost":4,
+    "LeadTime":5
+}

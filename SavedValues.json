@@ -1,0 +1,54 @@
+{
+  
+"MaxHeightTool": 75,
+"RmBoundingBuffer":10,
+"LeadTimePerSetUp":1,
+"HoursPerSetUp":2,
+"Shape":0.25,
+"Size":{
+    "Small":300000,
+    "Medium":3000000
+},
+"Machines":{
+    "Machine3AxisCostHour":80,
+    "Machine4AxisCostHour":100,
+    "Machine5AxisCostHour":250,
+    "Machine3AxisCostMin":1.33,
+    "Machine4AxisCostMin":1.67,
+    "Machine5AxisCostMin":4.17
+},
+"Proceses":{
+    "Roughing":0,
+    "Finishing":1,
+    "FinishingHT":2,
+    "Holes":3,
+    "Semi-finishing":4,
+    "Holder":5
+},
+"MrrGroupPracentage":
+{
+    "VeryHighSmall":75,
+    "VeryHeighMedium":50,
+    "HighMedium":70,
+    "HighLarge":50,
+    "MiddleLarge":50
+
+},
+"UnitConvert":
+{
+    "Dm3ToMm3":1000000,
+    "Dm2ToMm2":10000,
+    "Mm3ToCm3":1000,
+    "Mm2ToCm2":100,
+    "Dm3ToCM3":1000,
+    "Dm2ToCM2":1000
+},
+"Shipping":{
+    "China":{
+        "NetToGrossWeight":1.25,
+        "PackingCostPerKG":2,
+        "DomesticDeliveryCostPerKg":6
+    }
+}
+
+}

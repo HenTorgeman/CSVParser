@@ -11,28 +11,47 @@ const PartSchema = new mongoose.Schema({
     FilePath: {
         type: String,
     },
-    boundingBox:{
-        type: Number,
-        default: 0,
+    BoundingInfo:{
+        type:Object
     },
-    MS:{
-        type: Number,
-        default: 0,
+    ComplexityLevel:{
+        type:Number
     },
-    OriginalMS:{
-        type: Number,
-        default: 0,
+    PartCalculation:{
+        type:Object
     },
-    Directions:{
-        type: [Object]
+    PartInfo:{
+        type:Object
     },
-    DirectionStr:{
-        type: String
+    ProductionProcesses:{
+        type:[Object]
     },
-    FeatursNumber:{
-        type: Number,
-        default: 0,
+    STR:{
+        type:Boolean
     },
+    RawMaterial:{
+        type:Object
+    },
+    Cost:{
+        type:Number
+    },
+    RoughingMinuets:{
+        type:Number
+
+    },
+    FinishingMinuets:{
+        type:Number
+    },
+    LT:{
+        type:Number
+    },
+    BatchTime:{
+        type:Number
+    },
+    BatchCost:{
+        type:Number
+    },
+   
     
 });
 module.exports = mongoose.model("Part", PartSchema);

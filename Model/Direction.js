@@ -5,24 +5,14 @@ const DirectionSchema = new mongoose.Schema({
         type:String
     },
     DirectionAxis: {
-        type: String
+        type:String
     },
     AbsAxis: {
-        type: String
-    },
-    AngleAxis: {
         type: String
     },
     Key:{
         type:String,
         default:""
-    },
-    Side:{
-        type:String,
-        default:""
-    },
-    PlanAxisList: {
-        type: [String]
     },
     Features: {
         type: [Object]

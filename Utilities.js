@@ -1,3 +1,5 @@
+
+
 function GetRow(fileArr, index, callback) {
     for (let i = 0; i < fileArr.length; i++) {
         let rowArr = fileArr[i].split(" ");
@@ -8,6 +10,7 @@ function GetRow(fileArr, index, callback) {
     }
     callback(null);
 }
+
 
 
 module.exports = {

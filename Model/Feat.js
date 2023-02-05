@@ -4,7 +4,7 @@ const FeatSchema = new mongoose.Schema({
      PN:{
         type:String
     },
-        Index: {
+    Index: {
         type: Number,
         default: 0,
     },
@@ -13,30 +13,35 @@ const FeatSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['HOLE', 'BHOLE', 'PIN', 'RADIUS','OTHER','CBOR'],
+        enum: ['HOLE', 'BHOLE','RADIUS','COMPLEX','CBOR','OTHER'],
         default: 'HOLE'
     },
     AxisB: {
         type: String,
     },
+    AbsulteAxisB: {
+        type: String,
+    },  
+    IsComplex:{
+        type:Boolean,
+        default:false,
+    },
+    IsPossibleAbsDirection:{
+        type:Boolean,
+        default:false,
+     },
     RepreCount:{
         type:Number,
         default:0
     },
-    AbsulteAxisB: {
-        type: String,
+    MaxRadius:{
+        type:Number,
+        default:0
     },
-    AbsulteAxisC: {
-        type: String,
+    MinRadius:{
+        type:Number,
+        default:0
     },
-    IsUsed:{
-        type:Boolean,
-        default:false,
-      },
-      IsComplex:{
-        type:Boolean,
-        default:false,
-      },
 
 });
 module.exports = mongoose.model("Feat", FeatSchema);
