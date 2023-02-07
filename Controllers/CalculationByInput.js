@@ -48,7 +48,7 @@ const CalculateProduction=async (part)=>{
 
         //# ProcessHolderRemove
         if(isHolderRemoveSetUpNeeded==true){
-            let process= ProcessController.CreateRoughingProcess('Holder',holderTime,1);
+            let process= ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,1);
             process.Index=processIndex;
             process.PN=part.PN;
             partProductionProcess.push(process);
@@ -157,7 +157,7 @@ function GetPartProcessHolderSetUp(part){
 }
 function GetPartProcessRemoveHolderSetUp(part){
     let value=false;
-    let keySetups=part.PartInfo.keySetups;
+    let keySetups=part.PartInfo.KeyMachineSetups;
     if(part.PartInfo.KeyMachine!='3 Axis' && keySetups==1){
             value=true;
     }

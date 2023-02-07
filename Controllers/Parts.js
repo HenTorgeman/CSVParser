@@ -67,8 +67,8 @@ const ReadInputFile = async (req, res, next) => {
 
             const partInfo=new PartInfo({
                 KeyMachine:row[ColumnsInputFileByInput.KeyMachine],
-                KeyMachineSetups:row[ColumnsInputFileByInput.keyMachineProcessNumber],
-                OtherSetUps:row[ColumnsInputFileByInput.AdditionalProcess],
+                KeyMachineSetups:row[ColumnsInputFileByInput.KeyProcesses],
+                OtherSetUps:row[ColumnsInputFileByInput.AdditionProcesses],
                 AroundAxis:row[ColumnsInputFileByInput.AroundAxis],
                 MD:row[ColumnsInputFileByInput.MD],                
                 STR:false,
@@ -267,18 +267,21 @@ const PrintByInput = async (req, res, next) => {
         let pn =p.PN;
         let keyMachine=p.PartInfo.KeyMachine;
         let isStr=p.PartInfo.STR;
-        
-        let keyProcessesObj=p.ProductionProcesses.filter((p)=>{
-            if(p.Type=='Key')
-                return p;
-        });
-        let AdditionalProcessObj=p.ProductionProcesses.filter((p)=>{
-            if(p.Type=='Additional')
-                return p;
-        });
+        let keyProcessNumber=0;
+        let additionlProcessNumber=0;
 
-        let keyMachineProcessNumber=keyProcessesObj.length;
-        let AdditionalProcess=AdditionalProcessObj.length;
+        p.ProductionProcesses.map((p)=>{
+            if(p.Type=='Key'){
+                keyProcessNumber+= p.ProcessesNumber;
+            }
+        });
+        p.ProductionProcesses.map((p)=>{
+            if(p.Type=='Additional'){
+                additionlProcessNumber+= p.ProcessesNumber;
+            }
+        });
+        let keyMachineProcessNumber=keyProcessNumber;
+        let AdditionalProcess=additionlProcessNumber;
         // let MachiningDirections=p.PartInfo.MD;
         let MachiningDirections="Not calculated";
         // let AroundAxis=p.PartInfo.AroundAxis;

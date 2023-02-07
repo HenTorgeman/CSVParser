@@ -1,7 +1,7 @@
 {
   
 "MaxHeightTool": 75,
-"RmBoundingBuffer":10,
+"RmBoundingBuffer":5,
 "LeadTimePerSetUp":1,
 "HoursPerSetUp":2,
 "Shape":0.25,
