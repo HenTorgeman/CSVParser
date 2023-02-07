@@ -15,6 +15,8 @@ const Bounding = require("../Model/BoundingInfo");
 const PartInfo = require("../Model/PartInfo");
 
 const ColumnsInputFile = require("../ColumnsInputFile.json");
+const ColumnsInputFileByInput = require("../ColumnsInputFileByInput.json");
+
 const ColumnsOutputFile = require("../ColumnsOutputFile.json");
 const ColumnsSurfaceTRFile = require("../ColumnsSurfaceTRFile.json");
 const ColumnsMrrFile = require("../ColumnsMrrFile.json");
@@ -24,13 +26,15 @@ const values = require("../SavedValues.json");
 const fs = require("fs");
 const Util = require("../Utilities");
 const AlgoController = require("./Calculation");
+const CalculateByInputController = require("./CalculationByInput");
+
 const FileAnalysis = require("./KeyMachineProc");
 const PartCalculation = require("../Model/PartCalculation");
 
 const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CRawMaterial.csv';
 const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CMRR.csv';
 const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/SurfaceTreatment.csv';
-const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/Input.csv';
+const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/InputMD.csv';
 const testFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/100PartsMetaData.csv';
 
 //Files
@@ -43,64 +47,71 @@ const ReadInputFile = async (req, res, next) => {
 
     for(el of table){
         let row=el.split(",");
-        let p=row[ColumnsInputFile.PN];
-        
-        if(p!="Pn" && p!=""){
-            let str=row[ColumnsInputFile.STR]=='Y'?true:false;
+        let p=row[ColumnsInputFileByInput.PN];
+        let index=row[ColumnsInputFileByInput.Index];
+        if(p!="Part Number" && p!=""){
 
+            console.log("Calculate : "+p+"............"+index+" / "+partsCount);
             const part=new Part({
-                PN:row[ColumnsInputFile.PN],
-                Index:row[ColumnsInputFile.Index],
-                FilePath:row[ColumnsInputFile.file],
-                ComplexityLevel:row[ColumnsInputFile.ComplexityLevel],
-                KeyMachine:row[ColumnsInputFile.KeyMachine],
+                PN:row[ColumnsInputFileByInput.PN],
+                Index:row[ColumnsInputFileByInput.Index],
+                FilePath:row[ColumnsInputFileByInput.file],
+                ComplexityLevel:row[ColumnsInputFileByInput.ComplexityLevel],
+                KeyMachine:row[ColumnsInputFileByInput.KeyMachine],
             });
-            console.log("Calculate : "+part.PN+"............"+Index+" / "+partsCount);
-
             const centroidPoint=new Point({
-                x:row[ColumnsInputFile.CenterX],
-                y:row[ColumnsInputFile.CenterY],
-                z:row[ColumnsInputFile.CenterZ]
+                x:row[ColumnsInputFileByInput.CenterX],
+                y:row[ColumnsInputFileByInput.CenterY],
+                z:row[ColumnsInputFileByInput.CenterZ]
             });
+
             const partInfo=new PartInfo({
-                KeyMachine:row[ColumnsInputFile.KeyMachine],
-                KeyMachineSetups:row[ColumnsInputFile.KeyMachineSetUps],
-                OtherSetUps:row[ColumnsInputFile.OtherSetups],
-                MD:row[ColumnsInputFile.MD],                
-                STR:str,
+                KeyMachine:row[ColumnsInputFileByInput.KeyMachine],
+                KeyMachineSetups:row[ColumnsInputFileByInput.keyMachineProcessNumber],
+                OtherSetUps:row[ColumnsInputFileByInput.AdditionalProcess],
+                AroundAxis:row[ColumnsInputFileByInput.AroundAxis],
+                MD:row[ColumnsInputFileByInput.MD],                
+                STR:false,
             });
 
             const boundingInfo=new Bounding({
-                PartNumber:row[ColumnsInputFile.PN],
+                PartNumber:row[ColumnsInputFileByInput.PN],
                 MiddlePoint:centroidPoint,
-                L:row[ColumnsInputFile.L],
-                W:row[ColumnsInputFile.W],
-                H:row[ColumnsInputFile.H],
-                HAxis:row[ColumnsInputFile.Haxis],
-                WAxis:row[ColumnsInputFile.Waxis],
-                LAxis:row[ColumnsInputFile.Laxis],
-                VolumNet:(row[ColumnsInputFile.NetVolume]), //DM^3
-                Surface:(row[ColumnsInputFile.Surface]),
-                NetWeight:row[ColumnsInputFile.NetWeight]
+                L:row[ColumnsInputFileByInput.L],
+                W:row[ColumnsInputFileByInput.W],
+                H:row[ColumnsInputFileByInput.H],
+                HAxis:row[ColumnsInputFileByInput.Haxis],
+                WAxis:row[ColumnsInputFileByInput.Waxis],
+                LAxis:row[ColumnsInputFileByInput.Laxis],
+                VolumNet:row[ColumnsInputFileByInput.NetVolume], //DM^3
+                Surface:row[ColumnsInputFileByInput.Surface],
+                NetWeight:row[ColumnsInputFileByInput.NetWeight],
+                SurfaceTreatment:row[ColumnsInputFileByInput.SurfaceTreatment],
             });
 
-            boundingInfo.Size=AlgoController.GetPartSize(boundingInfo.L,boundingInfo.W,boundingInfo.H);
-            boundingInfo.Shape=AlgoController.GetPartShape(boundingInfo.L,boundingInfo.W,boundingInfo.H);
-            boundingInfo.Volum=AlgoController.GetPartGrossVolume(boundingInfo.L,boundingInfo.W,boundingInfo.H);
+            
+            boundingInfo.Size=CalculateByInputController.GetPartSize(boundingInfo.L,boundingInfo.W,boundingInfo.H);
+            boundingInfo.Shape=CalculateByInputController.GetPartShape(boundingInfo.L,boundingInfo.W,boundingInfo.H);
+            boundingInfo.Volum=CalculateByInputController.GetPartGrossVolume(boundingInfo.L,boundingInfo.W,boundingInfo.H);
 
-            const RawMaterial = await CRawMaterial.find({ RawMaterial:row[ColumnsInputFile.RM]}).exec();
+            const RawMaterial = await CRawMaterial.find({ RawMaterial:row[ColumnsInputFileByInput.RM]}).exec();
             part.RawMaterial=RawMaterial[0];
             part.BoundingInfo=boundingInfo;
+            part.BoundingInfo.ChargableWeight=CalculateByInputController.GetPartChargableWeight(part);
+
             part.PartInfo=partInfo;
 
-            const productionProcesses=await AlgoController.CalculateProduction(part);
+            //let str=row[ColumnsInputFile.STR]=='Y'?true:false;
+            let str = CalculateByInputController.GetPartSTR(part);
+            part.PartInfo.STR=str;
+            const productionProcesses=await CalculateByInputController.CalculateProduction(part);
 
             if (productionProcesses != null) {
                     part.ProductionProcesses=productionProcesses;
-                    part.Cost=AlgoController.CalculateCost(part);
-                    part.LT=AlgoController.CalculateLT(part);
-                    part.BatchTime=AlgoController.CalculateBatchLT(part);
-                    part.BatchCost=AlgoController.CalculateBatchPrice(part);
+                    part.Cost=await CalculateByInputController.CalculateCost(part);
+                    part.LT=CalculateByInputController.CalculateLTMinuets(part);
+                    part.BatchTime=CalculateByInputController.CalculateBatchLTDays(part);
+                    part.BatchCost=CalculateByInputController.CalculateBatchPrice(part);
 
                     let rughingTime=0;
                     let finishingTime=0;
@@ -124,7 +135,6 @@ const ReadInputFile = async (req, res, next) => {
 
         }
     }
-
     SaveAll(arr);
     res.status(200).send('OK');
 }
@@ -189,7 +199,7 @@ const ReadInputFileScript = async (req, res, next) => {
             const Calculation=await FileAnalysis.CalculateKeyMachineProcesses(part);
             if(Calculation!=null){
                 part.PartCalculation=Calculation;
-                const productionProcesses=await AlgoController.CalculateProductionScript(part,Calculation.KeyProductionProcesses);
+                const productionProcesses=await AlgoController.CalculateProduction(part,Calculation.KeyProductionProcesses);
                 SaveAll(productionProcesses);
 
                 if (productionProcesses != null) {
@@ -238,6 +248,89 @@ const ReadInputFileScript = async (req, res, next) => {
 
     res.status(200).send('OK');
 }
+
+//Print
+const PrintByInput = async (req, res, next) => {
+
+    const titles = []
+    const data=[];
+
+    for(let i=0;i<18;i++){
+        let col1=ColumnsOutputFile[i.toString()];
+        titles.push(col1);
+    }   
+    data.push(titles);
+    const parts =await Part.find({}).exec();
+        
+    for(index in parts){
+        let p=parts[index];
+        let pn =p.PN;
+        let keyMachine=p.PartInfo.KeyMachine;
+        let isStr=p.PartInfo.STR;
+        
+        let keyProcessesObj=p.ProductionProcesses.filter((p)=>{
+            if(p.Type=='Key')
+                return p;
+        });
+        let AdditionalProcessObj=p.ProductionProcesses.filter((p)=>{
+            if(p.Type=='Additional')
+                return p;
+        });
+
+        let keyMachineProcessNumber=keyProcessesObj.length;
+        let AdditionalProcess=AdditionalProcessObj.length;
+        let MachiningDirections=p.PartInfo.MD;
+        let AroundAxis=p.PartInfo.AroundAxis;
+        let MDSecondaeyAxis="Not calculated";
+        let PartNetVolume=p.BoundingInfo.VolumNet;
+        let PartGrossVolume=p.BoundingInfo.Volum;
+        let PartSurface=p.BoundingInfo.Surface;
+        let NumberOfHoles="Not calculated";
+        let RoughingMinuets=p.RoughingMinuets;
+        let FinishingMinuets=p.FinishingMinuets;
+        let FineHolesThreads="Not calculated";
+        let HolesTime="Not calculated";
+        let UnitCost=p.Cost;
+        let SetupCost=p.BatchCost;
+        let UnitLeadTimeHours=(p.LT/60);
+        let BatchLeadTimeDays=p.BatchTime;
+        const dataRow=[];
+        dataRow.push(pn);
+        dataRow.push(keyMachine);
+        dataRow.push(keyMachineProcessNumber);
+        dataRow.push(isStr);
+        dataRow.push(AdditionalProcess);
+        dataRow.push(MachiningDirections);
+        dataRow.push(AroundAxis);
+        dataRow.push(MDSecondaeyAxis);
+        dataRow.push(PartNetVolume.toFixed(2));
+        dataRow.push(PartGrossVolume.toFixed(2));
+        dataRow.push(PartSurface.toFixed(2));
+        dataRow.push(NumberOfHoles);
+        dataRow.push(RoughingMinuets.toFixed(2));
+        dataRow.push(FinishingMinuets.toFixed(2));
+        dataRow.push(FineHolesThreads);
+        dataRow.push(HolesTime);
+        dataRow.push(UnitCost.toFixed(2));
+        dataRow.push(SetupCost.toFixed(2));
+        dataRow.push(UnitLeadTimeHours.toFixed(2));
+        dataRow.push(BatchLeadTimeDays.toFixed(2));
+        data.push(dataRow);
+    }
+
+    const csvData = data.map(d => d.join(',')).join('\n');
+    fs.writeFile('/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/ResultFile.csv', csvData, (error) => {
+    
+    if (error) {
+        console.error(error);
+      } else {
+        console.log('The CSV file was written successfully');
+      }
+    });
+      
+    res.status(200).send(data);
+}   
+
 //Print
 const Print = async (req, res, next) => {
 
@@ -255,17 +348,20 @@ const Print = async (req, res, next) => {
         let p=parts[index];
         let pn =p.PN;
         let keyMachine=p.PartInfo.KeyMachine;
-        let keyMachineProcessNumber=0;
-        p.PartCalculation.KeyProductionProcesses.map(kpp => keyMachineProcessNumber+=kpp.ProcessesNumber);
         let isStr=p.PartInfo.STR;
-
-
+        
+        let keyProcessesObj=p.ProductionProcesses.filter((p)=>{
+            if(p.Type=='Key')
+                return p;
+        });
         let AdditionalProcessObj=p.ProductionProcesses.filter((p)=>{
             if(p.Type=='Additional')
                 return p;
         });
+
+        let keyMachineProcessNumber=keyProcessesObj.length;
         let AdditionalProcess=AdditionalProcessObj.length;
-        let MachiningDirections=p.PartCalculation.MD;
+        let MachiningDirections=p.PartInfo.MD;
         let AroundAxis=p.PartCalculation.AroundAxises.length;
         let MDSecondaeyAxis=AroundAxis>1?p.PartCalculation.AroundAxises[1].Directions.length:0;
         let PartNetVolume=p.BoundingInfo.VolumNet;
@@ -278,7 +374,7 @@ const Print = async (req, res, next) => {
         let HolesTime="";
         let UnitCost=p.Cost;
         let SetupCost=p.BatchCost;
-        let UnitLeadTimeHours=p.LT;
+        let UnitLeadTimeHours=(p.LT/60);
         let BatchLeadTimeDays=p.BatchTime;
         const dataRow=[];
         dataRow.push(pn);
@@ -493,5 +589,6 @@ module.exports = {
     ClearCMrrDB,
     ClearRawMaterialDB,
     ReadTestFile,
-    Print
+    Print,
+    PrintByInput
 };

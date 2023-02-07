@@ -37,7 +37,6 @@ const PartSchema = new mongoose.Schema({
     },
     RoughingMinuets:{
         type:Number
-
     },
     FinishingMinuets:{
         type:Number

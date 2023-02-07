@@ -4,98 +4,11 @@ const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
 const ProcessController = require("./ProductionProcesses");
 const values = require("../SavedValues.json");
 
-
-const CalculateProduction=async (part)=>{
-
-        const partProductionProcess=[];
-        let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
-        let isHolderSetupNeeded=GetPartProcessHolderSetUp(part);
-        let isHolderRemoveSetUpNeeded=GetPartProcessRemoveHolderSetUp(part)
-        let finishingSetupNumber=part.PartInfo.KeyMachineSetups;
-        let keyMachine=part.PartInfo.KeyMachine;
-        // let holderCostWithoutSetups=0;
-        let processIndex=0;
-
-        //# Roughing
-         if(roughingSetupNumber>0){
-            const roughingTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
-            const mrrVolum =GetPartMrrNumber(part.BoundingInfo);
-            const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
-            const roughingTime = mrrVolumCm/roughingTimePerCM;
-            const process=ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber);
-            process.Index=processIndex;
-            process.PN=part.PN;
-            partProductionProcess.push(process);
-            processIndex++;
-         }
-
-        //# ProcessHolder
-            const holderTimePerPart = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Holder');
-            const processHolder= ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,1);
-
-            if(isHolderSetupNeeded==true){
-                processHolder.Index=processIndex;
-                processHolder.PN=part.PN;
-                processIndex++;
-            }
-            else{
-                if(holderTimePerPart>0){
-                    processHolder.Lt+=holderTimePerPart;
-                    // holderCostWithoutSetups=holderTime*values.Machines["3AxisCostMin"];
-                }
-            }
-            partProductionProcess.push(processHolder);
-
-
-        //# ProcessHolderRemove
-        if(isHolderRemoveSetUpNeeded==true){
-            let process= ProcessController.CreateRoughingProcess('Holder',holderTime,1);
-            process.Index=processIndex;
-            process.PN=part.PN;
-            partProductionProcess.push(process);
-            processIndex++;
-        }
-
-        //# Finishing
-        const finishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
-        const semifinishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
-
-        const surface=part.BoundingInfo.Surface;
-        const surfaceCm=(surface/values.UnitConvert.Mm2ToCm2);
-        const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM)+(surfaceCm/semifinishingSetupTimePerCM);
-        
-        //# In script Version : will be based on around axis and around axis secondary.
-                if(keyMachine=='4 Axis'){
-                    let process= ProcessController.Create4AxisProcess('Finishing',finishingTimeMinutes,finishingSetupNumber);
-                    process.Index=processIndex+1;
-                    process.PN=part.PN;
-                    partProductionProcess.push(process);
-                }
-                if(keyMachine=='5 Axis'){
-                    let process= ProcessController.Create5AxisProcess('Finishing',finishingTimeMinutes,finishingSetupNumber);
-                    process.Index=processIndex+1;
-                    process.PN=part.PN;
-                    partProductionProcess.push(process);
-                }
-                if(keyMachine=='3 Axis'){
-                    let process= ProcessController.Create3AxisProcess('Finishing',finishingTimeMinutes,finishingSetupNumber);
-                    process.Index=processIndex+1;
-                    process.PN=part.PN;
-                    partProductionProcess.push(process);
-                }
-
-    return partProductionProcess;
-}
-const CalculateProductionScript=async (part,keyProcesses)=>{
-    // console.log("CalculateProduction : "+part.PN);
-
+const CalculateProduction=async (part,keyProcesses)=>{
     const partProductionProcess=[];
     let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
     let isHolderSetupNeeded=GetPartProcessHolderSetUp(part);
     let isHolderRemoveSetUpNeeded=GetPartProcessRemoveHolderSetUp(part)
-    // let finishingSetupNumber=part.PartInfo.KeyMachineSetups;
-    // let keyMachine=part.PartInfo.KeyMachine;
-    // let holderCostWithoutSetups=0;
     let processIndex=0;
 
     //# Roughing
@@ -212,10 +125,12 @@ function GetPartRoughingSetupsNumber(part){
     }    
     return setups;
 }
+
+//Need to fix this condition not to be depand on the input.
 function GetPartProcessHolderSetUp(part){
     let value=false;
     let roughingSetUpsNumber=GetPartRoughingSetupsNumber(part);
-    // let str=GetPartSTR(part);
+
     if(part.PartInfo.KeyMachine!='3 Axis'){
         if(roughingSetUpsNumber<=1){
             value=true;
@@ -429,7 +344,6 @@ module.exports = {
     GetPartSTR,
     GetPartRoughingSetupsNumber,
     CalculateProduction,
-    CalculateProductionScript,
     GetPartMrrNumber,
     GetPartMrrPrecentage,
     GetMrrTimeMinutes,

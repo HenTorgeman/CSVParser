@@ -14,8 +14,6 @@ router.post("/ClearCMrrDB", Controller.ClearCMrrDB);
 router.post("/ClearRawMaterialDB", Controller.ClearRawMaterialDB);
 router.post("/ReadTestFile", Controller.ReadTestFile);
 router.get("/Print", Controller.Print);
-
-
-
+router.get("/PrintByInput", Controller.PrintByInput);
 
 module.exports = router;

@@ -1,6 +1,5 @@
 const CMrr = require("../Model/CMrr");
 const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
-
 const ProcessController = require("./ProductionProcesses");
 const values = require("../SavedValues.json");
 
@@ -86,7 +85,6 @@ const CalculateProduction=async (part)=>{
 
     return partProductionProcess;
 }
-
 function GetPartSTR(part){
 
     let str=false;
@@ -136,7 +134,7 @@ function GetPartSTR(part){
 function GetPartRoughingSetupsNumber(part){
     let setups=0;
     if(part.PartInfo.STR){
-         if(part.PartCalculation.MD>=6){
+         if(part.PartInfo.MD>=6){
             setups=3;
         }
         else{
@@ -145,10 +143,11 @@ function GetPartRoughingSetupsNumber(part){
     }    
     return setups;
 }
+
 function GetPartProcessHolderSetUp(part){
     let value=false;
     let roughingSetUpsNumber=GetPartRoughingSetupsNumber(part);
-    // let str=GetPartSTR(part);
+
     if(part.PartInfo.KeyMachine!='3 Axis'){
         if(roughingSetUpsNumber<=1){
             value=true;
@@ -159,8 +158,6 @@ function GetPartProcessHolderSetUp(part){
 function GetPartProcessRemoveHolderSetUp(part){
     let value=false;
     let keySetups=part.PartInfo.keySetups;
-    // let keySetups=part.PartProductionProcess.KeySetupsNumber;
-
     if(part.PartInfo.KeyMachine!='3 Axis' && keySetups==1){
             value=true;
     }
@@ -199,8 +196,6 @@ function GetPartMrrPrecentage(boundingInfo)
 }
 function GetPartSize(L,W,H){
     let size="";
-    
-    // let Val=(parseFloat(L)*parseFloat(H)*parseFloat(W))/1000;
     let Val=(L*H*W);
 
     if(Val<values.Size.Small){
@@ -285,7 +280,7 @@ async function CalculateCost(part){
    }
    return cost;
 }
-function CalculateLT(part){
+function CalculateLTMinuets(part){
     let minuets=0;
      for(let i=0;i<part.ProductionProcesses.length;i++){
          let process=part.ProductionProcesses[i];
@@ -309,7 +304,7 @@ function CalculateLT(part){
     }
     return cost;
 }
-function CalculateBatchLT(part){
+function CalculateBatchLTDays(part){
      let minuets=0;
       for(let i=0;i<part.ProductionProcesses.length;i++){
           let process=part.ProductionProcesses[i];
@@ -329,7 +324,6 @@ const GetSurfaceTreatment= async (treatment)=>{
         return docs[0];
     }
 } 
-
 const GetMrrTimeMinutes = async (material,size,processName)=>{
     const docs =await CMrr.find({ Material:material,Size: size,ProcessName:processName}).exec();
     
@@ -351,7 +345,6 @@ const GetMrrTimeMinutes = async (material,size,processName)=>{
         }
     }
 }             
-
 async function SaveAll(docArray){
     return Promise.all(docArray.map((doc) => doc.save()));
 }
@@ -362,7 +355,6 @@ module.exports = {
     GetPartSTR,
     GetPartRoughingSetupsNumber,
     CalculateProduction,
-    CalculateProductionScript,
     GetPartMrrNumber,
     GetPartMrrPrecentage,
     GetMrrTimeMinutes,
@@ -373,9 +365,9 @@ module.exports = {
     GetPartFinishingTime,
     GetSurfaceTreatment,
     CalculateCost,
-    CalculateLT,
+    CalculateLTMinuets,
     CalculateBatchPrice,
-    CalculateBatchLT,
+    CalculateBatchLTDays,
     SaveAll
 
 

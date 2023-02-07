@@ -7,6 +7,9 @@ const PartInfoSchema = new mongoose.Schema({
     STR:{
         type:Boolean
     },
+    AroundAxis:{
+        type: Number
+    },
     KeyMachineSetups:{
         type: Number
     },
