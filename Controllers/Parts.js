@@ -279,8 +279,10 @@ const PrintByInput = async (req, res, next) => {
 
         let keyMachineProcessNumber=keyProcessesObj.length;
         let AdditionalProcess=AdditionalProcessObj.length;
-        let MachiningDirections=p.PartInfo.MD;
-        let AroundAxis=p.PartInfo.AroundAxis;
+        // let MachiningDirections=p.PartInfo.MD;
+        let MachiningDirections="Not calculated";
+        // let AroundAxis=p.PartInfo.AroundAxis;
+        let AroundAxis="Not calculated";
         let MDSecondaeyAxis="Not calculated";
         let PartNetVolume=p.BoundingInfo.VolumNet;
         let PartGrossVolume=p.BoundingInfo.Volum;
