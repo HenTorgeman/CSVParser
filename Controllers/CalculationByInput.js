@@ -91,6 +91,7 @@ function GetPartSTR(part){
     let mrrPrecentage=GetPartMrrPrecentage(part.BoundingInfo);
     
     if(part.RawMaterial.Material=='Aluminum'){
+
         if(part.ComplexityLevel==0){
             if(part.BoundingInfo.Size=='Small'){
                 if(mrrPrecentage>values.StrCondition.VeryHighSmall){
@@ -98,11 +99,19 @@ function GetPartSTR(part){
                 }
             }
             else{
-                if(mrrPrecentage>values.StrCondition.VeryHeighMedium){
-                    str=true;
+                if(part.BoundingInfo.Size=='Medium'){
+                    if(mrrPrecentage>values.StrCondition.VeryHighMedium){
+                        str=true;
+                    }
+                }
+                else{
+                    if(mrrPrecentage>values.StrCondition.VeryHighLarge){
+                        str=true;
+                    }
                 }
             }
         }
+
         if(part.ComplexityLevel==1){
             if(part.BoundingInfo.Size=='Small'){
                 if(mrrPrecentage>values.StrCondition.HighSmall){
@@ -120,6 +129,7 @@ function GetPartSTR(part){
                 }
             }
         }
+        
         if(part.ComplexityLevel==2){
             if(part.BoundingInfo.Size=='Large'){
                 if(mrrPrecentage>values.StrCondition.MiddleLarge){
@@ -232,10 +242,27 @@ function GetPartGrossVolume(L,W,H){
     let w=parseFloat(W);
     let h=parseFloat(H);
 
-    let lGross=l+values.RmBoundingBuffer;
-    let wlGross=w+values.RmBoundingBuffer;
-    let hGross=h+values.RmBoundingBuffer;
-
+    let size= GetPartSize(L,W,H);
+    let lGross=0;
+    let wlGross=0;
+    let hGross=0;
+    
+    if(size=='Small'){
+         lGross=l+((values.MaterialBuffer.Small/l)*100);
+         wlGross=w+((values.MaterialBuffer.Small/w)*100);
+         hGross=h+((values.MaterialBuffer.Small/h)*100);
+    }
+    if(size=='Medium'){
+         lGross=l+((values.MaterialBuffer.Medium/l)*100);
+         wlGross=w+((values.MaterialBuffer.Medium/w)*100);
+         hGross=h+((values.MaterialBuffer.Medium/h)*100);
+    }
+    if(size=='Large'){
+         lGross=l+((values.MaterialBuffer.Large/l)*100);
+         wlGross=w+((values.MaterialBuffer.Large/w)*100);
+         hGross=h+((values.MaterialBuffer.Large/h)*100);
+    }
+    
     let Val=lGross*wlGross*hGross;
     return Val;
 }

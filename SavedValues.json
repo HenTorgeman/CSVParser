@@ -2,6 +2,11 @@
   
 "MaxHeightTool": 75,
 "RmBoundingBuffer":5,
+"MaterialBuffer":{
+    "Small":25,
+    "Medium":7,
+    "Large":2
+},
 "LeadTimePerSetUp":1,
 "HoursPerSetUp":2,
 "Shape":0.25,
@@ -28,11 +33,17 @@
 "StrCondition":
 {
     "VeryHighSmall":75,
-    "VeryHeighMedium":50,
+    "VeryHighMedium":50,
+    "VeryHighLarge":50,
     "HighSmall":90,
     "HighMedium":70,
     "HighLarge":50,
-    "MiddleLarge":50
+    "MiddleSmall":0,
+    "MiddleMedium":0,
+    "MiddleLarge":50,
+    "LowSmall":0,
+    "LowMedium":0,
+    "LowLarge":0
 
 },
 "UnitConvert":

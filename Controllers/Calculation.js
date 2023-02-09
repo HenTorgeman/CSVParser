@@ -73,6 +73,7 @@ function GetPartSTR(part){
     let mrrPrecentage=GetPartMrrPrecentage(part.BoundingInfo);
     
     if(part.RawMaterial.Material=='Aluminum'){
+
         if(part.ComplexityLevel==0){
             if(part.BoundingInfo.Size=='Small'){
                 if(mrrPrecentage>values.StrCondition.VeryHighSmall){
@@ -80,11 +81,19 @@ function GetPartSTR(part){
                 }
             }
             else{
-                if(mrrPrecentage>values.StrCondition.VeryHeighMedium){
-                    str=true;
+                if(part.BoundingInfo.Size=='Medium'){
+                    if(mrrPrecentage>values.StrCondition.VeryHighMedium){
+                        str=true;
+                    }
+                }
+                else{
+                    if(mrrPrecentage>values.StrCondition.VeryHighLarge){
+                        str=true;
+                    }
                 }
             }
         }
+
         if(part.ComplexityLevel==1){
             if(part.BoundingInfo.Size=='Small'){
                 if(mrrPrecentage>values.StrCondition.HighSmall){
@@ -102,6 +111,7 @@ function GetPartSTR(part){
                 }
             }
         }
+        
         if(part.ComplexityLevel==2){
             if(part.BoundingInfo.Size=='Large'){
                 if(mrrPrecentage>values.StrCondition.MiddleLarge){
