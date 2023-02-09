@@ -3,9 +3,9 @@
 "MaxHeightTool": 75,
 "RmBoundingBuffer":5,
 "MaterialBuffer":{
-    "Small":25,
-    "Medium":7,
-    "Large":2
+    "Small":7.5,
+    "Medium":7.5,
+    "Large":7.5
 },
 "LeadTimePerSetUp":1,
 "HoursPerSetUp":2,
@@ -13,6 +13,15 @@
 "Size":{
     "Small":300000,
     "Medium":3000000
+},
+"SurfaceSize":{
+    "Group1":25,
+    "Group2":55,
+    "Group3":100,
+    "Group4":200,
+    "Group5":450,
+    "Group6":600,
+    "Group7":750
 },
 "Machines":{
     "Machine3AxisCostHour":80,

@@ -33,9 +33,12 @@ const PartCalculation = require("../Model/PartCalculation");
 
 const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CRawMaterial.csv';
 const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CMRR.csv';
+const CMRRFinishingFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CMRRFinishing.csv';
+
 const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/SurfaceTreatment.csv';
 const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/InputMD.csv';
 const testFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/100PartsMetaData.csv';
+
 
 //Files
 
@@ -51,6 +54,9 @@ const ReadInputFile = async (req, res, next) => {
         let index=row[ColumnsInputFileByInput.Index];
         if(p!="Part Number" && p!=""){
 
+            // if(p=='10015132' || p=='10201501'){
+            //     console.log("BreakPoint");
+            // }
             console.log("Calculate : "+p+"............"+index+" / "+partsCount);
             const part=new Part({
                 PN:row[ColumnsInputFileByInput.PN],
@@ -448,6 +454,37 @@ const ReadCMrrFile = async (req, res, next) => {
     console.log("## Done 😀 Mrr created" +GetTime());
     res.status(200).send('ok');
 }
+// const ReadCMrrFinishingFile = async (req, res, next) => {
+//     console.log("## Reading CMrrFile...."+GetTime());
+//     let table =fs.readFileSync(CMRRFinishingFile, "utf8").split("\r\n");
+    
+//     const Options=[];
+//     for(el of table){      
+//         let row=el.split(",");
+
+//         console.log(row);
+
+//         let Material=row[ColumnsMrrFile.Material];
+//         let Size=row[ColumnsMrrFile.Size];
+//         let ProcessName = row[ColumnsMrrFile.ProcessName];
+//         let Lt=row[ColumnsMrrFile.Time];
+//         if(Lt!="Time(Min)"){
+//             const Mrr = new CMrr({
+//                 Material:Material,
+//                 Size:Size,
+//                 ProcessName:ProcessName,
+//                 Lt:Lt
+//             });
+//             console.log(Mrr);
+
+//             Options.push(Mrr);
+//         }
+//     }
+//     SaveAll(Options);
+
+//     console.log("## Done 😀 Mrr created" +GetTime());
+//     res.status(200).send('ok');
+// }
 const ReadCSurfaceTreatmentFile = async (req, res, next) => {
     console.log("## Reading CMrrFile...."+GetTime());
     let table =fs.readFileSync(CSTRFile, "utf8").split("\r\n");

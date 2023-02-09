@@ -56,8 +56,9 @@ const CalculateProduction=async (part)=>{
         }
 
         //# Finishing
-        const finishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
-        const semifinishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
+        let surfaceGroup= GetPartSurfaceGroup(part.BoundingInfo.Surface/values.UnitConvert.Mm2ToCm2);
+        const finishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,surfaceGroup,'Finishing');
+        const semifinishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,surfaceGroup,'Semi-finishing');
 
         const surface=part.BoundingInfo.Surface;
         const surfaceCm=(surface/values.UnitConvert.Mm2ToCm2);
@@ -153,7 +154,6 @@ function GetPartRoughingSetupsNumber(part){
     }    
     return setups;
 }
-
 function GetPartProcessHolderSetUp(part){
     let value=false;
     let roughingSetUpsNumber=GetPartRoughingSetupsNumber(part);
@@ -204,6 +204,24 @@ function GetPartMrrPrecentage(boundingInfo)
     let MrrPrecentage=( MrrNumber/boundingInfo.Volum)*100;
     return MrrPrecentage;
 }
+function GetPartSurfaceGroup(surface){
+    let group="";
+
+    if(surface<=values.SurfaceSize.Group1)
+        group='Group1';
+        
+    if(surface>values.SurfaceSize.Group1 && surface<=values.SurfaceSize.Group2)
+        group='Group2';
+    if(surface>values.SurfaceSize.Group2 && surface<=values.SurfaceSize.Group3)
+        group='Group3';
+    if(surface>values.SurfaceSize.Group3 && surface<=values.SurfaceSize.Group4)
+        group='Group4';
+    if(surface>values.SurfaceSize.Group4 && surface<=values.SurfaceSize.Group5)
+        group='Group5';
+    if(surface>values.SurfaceSize.Group5 && surface<=values.SurfaceSize.Group6)
+        group='Group6';
+    return group;
+}
 function GetPartSize(L,W,H){
     let size="";
     let Val=(L*H*W);
@@ -217,9 +235,8 @@ function GetPartSize(L,W,H){
             size="Medium";
         }
         else{
-            if(Val>values.Size.Medium){
+            if(Val>=values.Size.Medium){
                 size="Large";
-    
             }
     }
     }
@@ -246,22 +263,39 @@ function GetPartGrossVolume(L,W,H){
     let lGross=0;
     let wlGross=0;
     let hGross=0;
-    
-    if(size=='Small'){
-         lGross=l+((values.MaterialBuffer.Small/l)*100);
-         wlGross=w+((values.MaterialBuffer.Small/w)*100);
-         hGross=h+((values.MaterialBuffer.Small/h)*100);
+  if(size=='Small'){
+         lGross=l+values.MaterialBuffer.Small;
+         wlGross=w+values.MaterialBuffer.Small;
+         hGross=h+values.MaterialBuffer.Small;
     }
     if(size=='Medium'){
-         lGross=l+((values.MaterialBuffer.Medium/l)*100);
-         wlGross=w+((values.MaterialBuffer.Medium/w)*100);
-         hGross=h+((values.MaterialBuffer.Medium/h)*100);
+        lGross=l+values.MaterialBuffer.Medium;
+        wlGross=w+values.MaterialBuffer.Medium;
+        hGross=h+values.MaterialBuffer.Medium;
+
     }
     if(size=='Large'){
-         lGross=l+((values.MaterialBuffer.Large/l)*100);
-         wlGross=w+((values.MaterialBuffer.Large/w)*100);
-         hGross=h+((values.MaterialBuffer.Large/h)*100);
+        lGross=l+values.MaterialBuffer.Large;
+        wlGross=w+values.MaterialBuffer.Large;
+        hGross=h+values.MaterialBuffer.Large;
     }
+
+    
+    // if(size=='Small'){
+    //      lGross=l+((values.MaterialBuffer.Small/l)*100);
+    //      wlGross=w+((values.MaterialBuffer.Small/w)*100);
+    //      hGross=h+((values.MaterialBuffer.Small/h)*100);
+    // }
+    // if(size=='Medium'){
+    //      lGross=l+((values.MaterialBuffer.Medium/l)*100);
+    //      wlGross=w+((values.MaterialBuffer.Medium/w)*100);
+    //      hGross=h+((values.MaterialBuffer.Medium/h)*100);
+    // }
+    // if(size=='Large'){
+    //      lGross=l+((values.MaterialBuffer.Large/l)*100);
+    //      wlGross=w+((values.MaterialBuffer.Large/w)*100);
+    //      hGross=h+((values.MaterialBuffer.Large/h)*100);
+    // }
     
     let Val=lGross*wlGross*hGross;
     return Val;
@@ -371,12 +405,35 @@ const GetMrrTimeMinutes = async (material,size,processName)=>{
             }
         }
     }
-}             
+}     
+
+// const GetMRRFinishingTimeMinutes = async (material,size,processName)=>{
+//     const docs =await CMrr.find({ Material:material,Size: size,ProcessName:processName}).exec();
+    
+//     if(docs.length>1) {
+//         console.log("#Error: Duplicate values in CMRR table");
+//         return null;
+//     }
+//     else{
+//         if(docs.length>0){
+//             let value = docs[0].Lt;
+//             return value;
+//         }
+//         else{
+//             if(docs.length==0){
+//                 let value =1;
+//                 console.log("#Error: Material notFound in CMRR table");
+//                 return value;
+//             }
+//         }
+//     }
+// }     
 async function SaveAll(docArray){
     return Promise.all(docArray.map((doc) => doc.save()));
 }
 module.exports = {
     GetPartSize,
+    GetPartSurfaceGroup,
     GetPartShape,
     GetPartGrossVolume,
     GetPartSTR,
