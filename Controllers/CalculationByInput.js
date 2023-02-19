@@ -16,7 +16,6 @@ const CalculateProduction=async (part)=>{
         let processIndex=0;
 
         //# Roughing
-         if(roughingSetupNumber>0){
             const roughingTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
             const mrrVolum =GetPartMrrNumber(part.BoundingInfo);
             const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
@@ -25,9 +24,8 @@ const CalculateProduction=async (part)=>{
             process.Index=processIndex;
             process.PN=part.PN;
             partProductionProcess.push(process);
-            processIndex++;
-         }
-
+            processIndex++;      
+            
         //# ProcessHolder
             const holderTimePerPart = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Holder');
             const processHolder= ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,1);
@@ -36,6 +34,8 @@ const CalculateProduction=async (part)=>{
                 processHolder.Index=processIndex;
                 processHolder.PN=part.PN;
                 processIndex++;
+                partProductionProcess.push(processHolder);
+
             }
             else{
                 if(holderTimePerPart>0){
@@ -43,8 +43,6 @@ const CalculateProduction=async (part)=>{
                     // holderCostWithoutSetups=holderTime*values.Machines["3AxisCostMin"];
                 }
             }
-            partProductionProcess.push(processHolder);
-
 
         //# ProcessHolderRemove
         if(isHolderRemoveSetUpNeeded==true){
@@ -158,7 +156,10 @@ function GetPartProcessHolderSetUp(part){
     let value=false;
     let roughingSetUpsNumber=GetPartRoughingSetupsNumber(part);
 
-    if(part.PartInfo.KeyMachine!='3 Axis'){
+    if(part.PN=='10009823'){
+        console.log("BreakPoint");
+    }
+    if(part.PartInfo.KeyMachine != '3 Axis'){
         if(roughingSetUpsNumber<=1){
             value=true;
         }
@@ -220,6 +221,12 @@ function GetPartSurfaceGroup(surface){
         group='Group5';
     if(surface>values.SurfaceSize.Group5 && surface<=values.SurfaceSize.Group6)
         group='Group6';
+    if(surface>values.SurfaceSize.Group6)
+        group='Group7';
+
+
+    //LImitetion condition to add
+
     return group;
 }
 function GetPartSize(L,W,H){
@@ -312,6 +319,7 @@ function GetPartMaterialWeight(part){
     let l=parseFloat(part.BoundingInfo.L)+values.RmBoundingBuffer;
     let h=parseFloat(part.BoundingInfo.H)+values.RmBoundingBuffer;
     let netWeighMM=w/10*l/10*h/10;
+    
     let materialWeight=(netWeighMM/values.UnitConvert.Mm3ToCm3) * part.RawMaterial.Density;
     return materialWeight;
 
