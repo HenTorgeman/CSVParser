@@ -9,6 +9,7 @@
 },
 "LeadTimePerSetUp":1,
 "HoursPerSetUp":2,
+"MinutesPerSetUp":120,
 "Shape":0.25,
 "Size":{
     "Small":300000,

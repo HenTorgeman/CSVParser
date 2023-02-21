@@ -4,7 +4,7 @@ const ProductionProcesses = require("../Model/ProductionSetUp");
 const KeyProcessesOption = require("../Model/KeyProcessesOption");
 
 
-const values = require("../SavedValues.json");
+const values = require("../Files/SavedValues.json");
 
 function CreateRoughingProcess(processName,minutes,processNumber){
     let cost=minutes*values.Machines["Machine3AxisCostMin"];

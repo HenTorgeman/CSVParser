@@ -1,7 +1,7 @@
 const CMrr = require("../Model/CMrr");
 const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
 const ProcessController = require("./ProductionProcesses");
-const values = require("../SavedValues.json");
+const values = require("../Files/SavedValues.json");
 
 
 const CalculateProduction=async (part)=>{
@@ -357,31 +357,41 @@ function CalculateLTMinuets(part){
     }
     return minuets;
 }
- function CalculateBatchPrice(part){
+ function CalculateSetUpCost(part){
+    let minutes=0;
     let cost=0;
+
     let machineCostPerMin=0;
 
     if(part.PartInfo.KeyMachine=='3 Axis') machineCostPerMin=values.Machines.Machine3AxisCostMin;
     if(part.PartInfo.KeyMachine=='4 Axis') machineCostPerMin=values.Machines.Machine4AxisCostMin;
     if(part.PartInfo.KeyMachine=='5 Axis') machineCostPerMin=values.Machines.Machine5AxisCostMin;
 
-    let batchAdditionalCost=120*machineCostPerMin;
      for(let i=0;i<part.ProductionProcesses.length;i++){
          let process=part.ProductionProcesses[i];
-         let val=process.Cost+batchAdditionalCost;
-         cost+=val;
+         let val=process.ProcessesNumber*values.MinutesPerSetUp;
+         minutes+=val;
     }
+    cost=minutes*machineCostPerMin;
     return cost;
 }
-function CalculateBatchLTDays(part){
+
+async function CalculateBatchLTDays(part){
+    let strObj=await GetSurfaceTreatment(part.BoundingInfo.SurfaceTreatment);
+
+    let strLTDay=strObj==null?0:strObj.LeadTime;
+    let materialLTDays=part.RawMaterial.LT;
+    
+    let strStandart=1;
      let minuets=0;
-      for(let i=0;i<part.ProductionProcesses.length;i++){
-          let process=part.ProductionProcesses[i];
-          minuets+=process.Time;
-     }
+     for(let i=0;i<part.ProductionProcesses.length;i++){
+        let process=part.ProductionProcesses[i];
+        let val=process.ProcessesNumber*values.MinutesPerSetUp;
+        minuets+=val;
+   }
 
      let hours=minuets/60;
-     let days=part.ProductionProcesses.length+hours;
+     let days=materialLTDays+strLTDay+strStandart+(hours/24);
      return days;
 }
 
@@ -458,7 +468,7 @@ module.exports = {
     GetSurfaceTreatment,
     CalculateCost,
     CalculateLTMinuets,
-    CalculateBatchPrice,
+    CalculateSetUpCost,
     CalculateBatchLTDays,
     SaveAll
 

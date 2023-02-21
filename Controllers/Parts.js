@@ -14,14 +14,14 @@ const ProductionSetUp = require("../Model/ProductionSetUp");
 const Bounding = require("../Model/BoundingInfo");
 const PartInfo = require("../Model/PartInfo");
 
-const ColumnsInputFile = require("../ColumnsInputFile.json");
-const ColumnsInputFileByInput = require("../ColumnsInputFileByInput.json");
+const ColumnsInputFile = require("../Files/ColumnsInputFile.json");
+const ColumnsInputFileByInput = require("../Files/ColumnsInputFileByInput.json");
 
-const ColumnsOutputFile = require("../ColumnsOutputFile.json");
-const ColumnsSurfaceTRFile = require("../ColumnsSurfaceTRFile.json");
-const ColumnsMrrFile = require("../ColumnsMrrFile.json");
-const ColumnsRMFile = require("../ColumnsRmFile.json");
-const values = require("../SavedValues.json");
+const ColumnsOutputFile = require("../Files/ColumnsOutputFile.json");
+const ColumnsSurfaceTRFile = require("../Files/ColumnsSurfaceTRFile.json");
+const ColumnsMrrFile = require("../Files/ColumnsMrrFile.json");
+const ColumnsRMFile = require("../Files/ColumnsRmFile.json");
+const values = require("../Files/SavedValues.json");
 
 const fs = require("fs");
 const Util = require("../Utilities");
@@ -116,19 +116,21 @@ const ReadInputFile = async (req, res, next) => {
                     part.ProductionProcesses=productionProcesses;
                     part.Cost=await CalculateByInputController.CalculateCost(part);
                     part.LT=CalculateByInputController.CalculateLTMinuets(part);
-                    part.BatchTime=CalculateByInputController.CalculateBatchLTDays(part);
-                    part.BatchCost=CalculateByInputController.CalculateBatchPrice(part);
+                    part.BatchTime=await CalculateByInputController.CalculateBatchLTDays(part);
+                    part.BatchCost=CalculateByInputController.CalculateSetUpCost(part);
 
                     let rughingTime=0;
                     let finishingTime=0;
 
                     for(let i=0;i<productionProcesses.length;i++){
                         let proc=productionProcesses[i];
-                        if(proc.ProcessName=='Roughing' || proc.ProcessName=='Holder'){
-                            rughingTime+=proc.Time;                        
+                        if(proc.ProcessName=='Roughing'){
+                            rughingTime+=proc.Time;                  
                         }
                         else{
-                            finishingTime+=proc.Time;   
+                            if(proc.ProcessName=='Finishing'){
+                                finishingTime+=proc.Time;
+                            }
                         }
                     }
 
