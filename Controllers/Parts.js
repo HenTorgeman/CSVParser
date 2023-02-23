@@ -456,37 +456,6 @@ const ReadCMrrFile = async (req, res, next) => {
     console.log("## Done 😀 Mrr created" +GetTime());
     res.status(200).send('ok');
 }
-// const ReadCMrrFinishingFile = async (req, res, next) => {
-//     console.log("## Reading CMrrFile...."+GetTime());
-//     let table =fs.readFileSync(CMRRFinishingFile, "utf8").split("\r\n");
-    
-//     const Options=[];
-//     for(el of table){      
-//         let row=el.split(",");
-
-//         console.log(row);
-
-//         let Material=row[ColumnsMrrFile.Material];
-//         let Size=row[ColumnsMrrFile.Size];
-//         let ProcessName = row[ColumnsMrrFile.ProcessName];
-//         let Lt=row[ColumnsMrrFile.Time];
-//         if(Lt!="Time(Min)"){
-//             const Mrr = new CMrr({
-//                 Material:Material,
-//                 Size:Size,
-//                 ProcessName:ProcessName,
-//                 Lt:Lt
-//             });
-//             console.log(Mrr);
-
-//             Options.push(Mrr);
-//         }
-//     }
-//     SaveAll(Options);
-
-//     console.log("## Done 😀 Mrr created" +GetTime());
-//     res.status(200).send('ok');
-// }
 const ReadCSurfaceTreatmentFile = async (req, res, next) => {
     console.log("## Reading CMrrFile...."+GetTime());
     let table =fs.readFileSync(CSTRFile, "utf8").split("\r\n");
