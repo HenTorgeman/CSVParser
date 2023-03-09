@@ -3,34 +3,154 @@ const Point = require("../Model/Point");
 const fileUtilit = require("../Utilities");
 const Feat = require("../Model/Feat");
 const Direction = require("../Model/Direction");
-const Part = require("../Model/Part");
-const e = require("express");
 const fs = require("fs");
 
 const AroundAxis = require("../Model/AroundAxis");
-const Bounding = require("../Model/BoundingInfo");
 const Machine = require("../Model/SetUp");
 const values = require("../Files/SavedValues.json");
 const PartCalculation = require("../Model/PartCalculation");
-const CalcController = require("./KeyMachineProc");
+const PartAcssesability = require("../Model/PartAcssesability");
 const ProductionProcessesController = require("./ProductionProcesses");
+
 const PriceAlgorithmController = require("./Calculation");
 
 var passCircelArr = [];
 var featIndex=0;
 
+//------------Accsesability-----------------------------------------
+const CalculatePartAccsesability=(part)=>
+    new Promise(async resolve =>{
+    const calculation = part.PartCalculation;
+    if(part.FilePath=='not valid file') resolve(null);
+    else{
+    let featursNumber=calculation.FeatursNumber;
+    let partData=fs.readFileSync(part.FilePath, "utf8").split("\r\n");
+    let stepRowsCount=partData.length;
+
+    const maximumCircleRadius=await GetPartMaxRadius(part.PN);
+    const minCircleRadius=await GetPartMinRadius(part.PN);
+    const maximumDistance=await GetPartMaximumDistanceBetweenFeateures(part.PN);
+    const minimumDistance=await GetPartMinimumDistanceBetweenFeateures(part.PN);
+
+    const acssesability=new PartAcssesability({
+       PartNumber:part.PN,
+       FeatursNumber:featursNumber,
+       StepRowsCount:stepRowsCount,
+       MaximumCircleRadius:maximumCircleRadius,
+       MinimumCircleRadius:minCircleRadius,
+       MaximumDistanceBetweenCircles:maximumDistance,
+       MinimumDistanceBetweenCircles:minimumDistance
+    });
+    resolve(acssesability);
+}
+        
+});
+
+//-------------Accsesability Funstions-------------------------------------
+const GetPartMaxRadius=(pn)=>
+new Promise(async resolve =>{
+    const circles =await Circel.find({ PN:pn}).exec();
+    const max = Math.max(...circles.map(o => o.Radius))
+    resolve(max);
+})
+const GetPartMinRadius=(pn)=>
+new Promise(async resolve =>{
+    const circles =await Circel.find({ PN:pn}).exec();
+    const min = Math.min(...circles.map(o => o.Radius))
+    resolve(min);
+})
+
+
+const GetPartMinimumDistanceBetweenFeateures=(pn)=>
+new Promise(async resolve =>{
+    let partDistance=99999999;
+    const feats =await Feat.find({ PN:pn}).exec();
+    if(feats.length==0) resolve(null);
+
+        for(let i=0;i<feats.length;i++){
+            let feat1=feats[i];
+            for(let j=0;j<feats.length;j++){
+                if(j!=i){
+                    let feat2=feats[j];
+                    if(feat1!=undefined && feat2!=undefined){
+                        if(feat1.circels.length>0 && feat2.circels.length>0){
+        
+                        let circles1=feat1.circels[0];
+                        let circles2=feat2.circels[0];
+
+                        if(circles1!=undefined && circles2!=undefined){
+                            let x1=circles1.A.x;
+                            let x2=circles2.A.x;
+                            let y1=circles1.A.y;
+                            let y2=circles2.A.y;
+                            let z1=circles1.A.z;
+                            let z2=circles2.A.z;
+
+                            let distance=(Math.pow(x1-x2,2))+(Math.pow(y1-y2,2))+(Math.pow(z1-z2,2));
+                            distance=Math.sqrt(distance);
+
+                            if(distance<partDistance){
+                                partDistance=distance;
+                            }
+                        }
+                    }    
+                }
+            }
+        }       
+    }
+resolve(partDistance);
+});
+
+const GetPartMaximumDistanceBetweenFeateures=(pn)=>
+        new Promise(async resolve =>{
+        let partDistance=1;
+
+        const feats =await Feat.find({ PN:pn}).exec();
+        if(feats.length==0) resolve(null);
+
+            for(let i=0;i<feats.length;i++){
+                let feat1=feats[i];
+                for(let j=0;j<feats.length;j++){
+                    if(j!=i){
+                        let feat2=feats[j];
+                        if(feat1!=undefined && feat2!=undefined){
+                            if(feat1.circels.length>0 && feat2.circels.length>0){
+            
+                            let circles1=feat1.circels[0];
+                            let circles2=feat2.circels[0];
+        
+                            if(circles1!=undefined && circles2!=undefined){
+                                let x1=circles1.A.x;
+                                let x2=circles2.A.x;
+                                let y1=circles1.A.y;
+                                let y2=circles2.A.y;
+                                let z1=circles1.A.z;
+                                let z2=circles2.A.z;
+        
+                                let distance=(Math.pow(x1-x2,2))+(Math.pow(y1-y2,2))+(Math.pow(z1-z2,2));
+                                distance=Math.sqrt(distance);
+        
+                                if(distance>=partDistance){
+                                    partDistance=distance;
+                                }
+                            }
+                        }    
+                    }
+                }
+            }       
+        }
+    resolve(partDistance);
+});
+
+//------------Key Machine Processes-----------------------------------------
+
 const CalculateKeyMachineProcesses=(part)=>
     new Promise(async resolve =>{
 
-        let partData=[];
-        if (fs.existsSync(part.FilePath)) {
-            partData=fs.readFileSync(part.FilePath, "utf8").split("\r\n");
-        } 
-        else {
-            console.log('file not found! ' + part.PN);
-            resolve(null);
-        }
-      
+     
+        if(part.FilePath=='not valid file') resolve(null);
+        else{
+            let partData =fs.readFileSync(part.FilePath, "utf8").split("\r\n");
             const circlesArr = await GetCirclesArr(partData, part.PN,part.BoundingInfo.MiddlePoint);
             SaveAll(circlesArr);
             const featsArr = await GetFeatArr(circlesArr,part.PN,part.BoundingInfo);
@@ -39,7 +159,10 @@ const CalculateKeyMachineProcesses=(part)=>
             SaveAll(directionArr);
             const AroundAxisArr = await GetAroundAxis(directionArr,part.PN);
             SaveAll(AroundAxisArr);
+            const partUnit = await GetStepUnit(part.BoundingInfo,partData);
 
+            if(partUnit==true) console.log("# Inch ! ");
+            
             let totalFeats=0;
             directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
             let directionString=GetAsString(directionArr);
@@ -51,8 +174,8 @@ const CalculateKeyMachineProcesses=(part)=>
                 aroundAxis:AroundAxisArr
             };
 
-            const finishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Finishing');
-            const semifinishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Semi-finishing');
+            const finishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.SurfaceGroup,'Finishing');
+            const semifinishingSetupTimePerCM = await PriceAlgorithmController.GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.SurfaceGroup,'Semi-finishing');
 
             const surface=part.BoundingInfo.Surface;
             const surfaceCm=(surface/values.UnitConvert.Mm2ToCm2);
@@ -67,23 +190,26 @@ const CalculateKeyMachineProcesses=(part)=>
             for(let i=0;i<lowerOption.Processes.length;i++){
                 let process=lowerOption.Processes[i];
                 keyProcesses.push(process);
-            
             }
-        }else{
+        }
+        else{
             // console.log("No Key machine procees option");
         }
 
-            const Calculation= new PartCalculation({
-                PN:part.PN,
-                MD:directionArr.length,
-                DirectionStr:directionString,
-                FeatursNumber:totalFeats,
-                AroundAxisNumber:AroundAxisArr.length,
-                AroundAxises:AroundAxisArr,
-                KeyProductionProcesses:keyProcesses
-            });
 
-            resolve(Calculation);
+        const Calculation= new PartCalculation({
+            PN:part.PN,
+            MD:directionArr.length,
+            DirectionStr:directionString,
+            FeatursNumber:totalFeats,
+            AroundAxisNumber:AroundAxisArr.length,
+            AroundAxises:AroundAxisArr,
+            KeyProductionProcesses:keyProcesses,
+            IsInch:partUnit
+        });    
+
+        resolve(Calculation);
+    }
         
 });
 
@@ -359,7 +485,7 @@ new Promise(async resolve =>{
 }
 });
 
-//-------------MAIN FUNCTION----------------------------------------------
+//-------------Files Functions----------------------------------------------
 
 const GetAroundAxis=(directionArr,pn)=>
     new Promise(async resolve =>{
@@ -494,26 +620,16 @@ const GetCirclesArr=(tableFile,pn,middlePoint)=>
 });
 
 //(02)
-const GetBounding=(pn,fullTable,W,L,H)=>
+const GetStepUnit=(bounding,fullTable)=>
     new Promise(async resolve =>{
-
-
-        let w=parseFloat(W);
-        let l=parseFloat(L);
-        let h=parseFloat(H);
-
+        let w=parseFloat(bounding.W);
+        let l=parseFloat(bounding.L);
+        let h=parseFloat(bounding.H);
         let arrayX=[];
         let arrayY=[];
         let arrayZ=[];
         let isInc=false;
-
-        let WAxis='Y';
-        let LAxis='X';
-        let HAxis='Z';
-
-        let extraW=w;
-        let extraL=l;
-        let extraH=h;
+        let LAxis=bounding.LAxis;
 
         // # Reading all x y z from step file ----------
         let filteredArr=fullTable.filter(e=>{
@@ -522,18 +638,14 @@ const GetBounding=(pn,fullTable,W,L,H)=>
         });
 
         for(el of filteredArr){
-
-            var row = el.split(" ");
+            var row = el.split(" ")
             let x = parseFloat(row[7]).toFixed(2);
             let y = parseFloat(row[8]).toFixed(2);
             let z = parseFloat(row[9]).toFixed(2);
 
-            if(Math.abs(x)>extraW && Math.abs(x)>extraL && Math.abs(x)>extraH || Math.abs(y)>extraW && Math.abs(y)>extraL && Math.abs(y)>extraH || Math.abs(z)>extraW && Math.abs(z)>extraL && Math.abs(z)>extraH){
-
-                //console.log("Passed point not in the limitetion");
+            if(Math.abs(x)>w && Math.abs(x)>l && Math.abs(x)>h || Math.abs(y)>w && Math.abs(y)>l && Math.abs(y)>h || Math.abs(z)>w && Math.abs(z)>l && Math.abs(z)>h){
             }
-            else{
-
+            else{   
                 arrayX.push(x);
                 arrayY.push(y);
                 arrayZ.push(z);
@@ -551,188 +663,28 @@ const GetBounding=(pn,fullTable,W,L,H)=>
         let areaY=MaxYStep-MinYStep;
         let areaZ=MaxZStep-MinZStep;
 
-        // # Reading all x y z from step file ----------
-
-        let MaxY,MinY,MaxX,MinX,MaxZ,MinZ,xTotal,yTotal,zTotal;
-        let tempArray=[];
-        // # Changing the w h l to the real step x y z ----------
-
-        if(areaY>areaX && areaY>areaZ){
-             MaxY=MaxXStep
-             MinY=MinXStep;
-             yTotal=l;
-             LAxis='Y';
-            
-             tempArray=arrayX;
-             arrayX=arrayY;
-            
-
-            if(areaX>areaZ){
-                 MaxX=MaxYStep;
-                 MinX=MinYStep;
-                 MaxZ=MaxZStep;
-                 MinZ=MinZStep;
-                 xTotal=w;
-                 zTotal=h;
-                 WAxis='X';
-                 HAxis='Z';
-                 arrayY=tempArray;
-                 arrayZ=arrayZ;
-            }
-            else{
-                 MaxZ=MaxYStep;
-                 MinZ=MinYStep;
-                 MaxX=MaxZStep;
-                 MinX=MinZStep;
-                 zTotal=w;
-                 xTotal=h;
-                 WAxis='Z';
-                 HAxis='X';
-                 arrayY=arrayZ;
-                 arrayX=tempArray;
-            }
-        }
-        else{
-            if(areaZ>areaX && areaZ>areaY){
-                 MaxZ=MaxXStep
-                 MinZ=MinXStep;
-                 zTotal=l;
-                 LAxis='Z';
-
-
-                 tempArray=arrayX;
-                 arrayX=arrayZ;
-
-                if(areaY>areaX){
-                     MaxY=MaxYStep;
-                     MinY=MinYStep;
-                     MaxX=MaxZStep;
-                     MinX=MinZStep;
-                     yTotal=w;
-                     xTotal=h;
-                     WAxis='Y';
-                     HAxis='X';
-                     arrayY=arrayY;
-                     arrayZ=tempArray;
-                }
-                else{
-                     MaxX=MaxYStep;
-                     MinX=MinYStep;
-                     MaxY=MaxZStep;
-                     MinY=MinZStep;
-                     xTotal=w;
-                     yTotal=h;
-                     WAxis='X';
-                     HAxis='Y';
-                     arrayY=tempArray;
-                     arrayZ=arrayY;
-
-                }
-            }
-            else{
-                if(areaX>areaZ && areaX>areaY)
-                    {
-                         MaxX=MaxXStep
-                         MinX=MinXStep;
-                         xTotal=l;
-
-                        if(areaY>areaZ){
-                             MaxY=MaxYStep;
-                             MinY=MinYStep;
-                             MaxZ=MaxZStep;
-                             MinZ=MinZStep;
-                             yTotal=w;
-                             zTotal=h;
-                             
-                        }
-                        else{
-                             MaxZ=MaxYStep;
-                             MinZ=MinYStep;
-                             MaxY=MaxZStep;
-                             MinY=MinZStep;
-                             zTotal=w;
-                             yTotal=h;
-                             WAxis='Z';
-                             HAxis='Y';
-                             tempArray=arrayY;
-                             arrayY=arrayZ;
-                             arrayZ=tempArray;
-                        }
-                }
-            }
-        }
-
-        // # Changing the w h l to the real step x y z ------
-    
-        let MiddleX=(MinX+MaxX)/2;
-        let MiddleY=(MinY+MaxY)/2;
-        let MiddleZ=(MinZ+MaxZ)/2;
-
-
         if(LAxis=='X'){
-            if((MaxX-MinX)*25.4<l+10){
+            if(areaX*25.4<l+10){
                 isInc=true;
             }
         }
         else{
             if(LAxis=='Y'){
-                if((MaxY-MinY)*25.4<l+10){
+                if(areaY*25.4<l+10){
                     isInc=true;
                 }
             }
             else{
                 if(LAxis=='Z'){
-                    if((MaxZ-MinZ)*25.4<l+10){
+                    if(areaZ*25.4<l+10){
                         isInc=true;
                     }
                 }
             }
         }
 
-        //Max and Min are the same with diffrent sign (pos/neg)
-
-        const mmBuffer= 3;
-        const incBuffer= mmBuffer*25.4;
-
-        //Middle is Close to the Min/Max
-        if(isInc==false){        
-            MiddleX = Math.abs(MaxX-xTotal/2)<=5 ||  Math.abs(MinX-xTotal/2)<=5 ? 0: MiddleX;
-            MiddleY = Math.abs(MaxY-yTotal/2)<=5 ||  Math.abs(MinY-yTotal/2)<=5 ? 0: MiddleY;
-            MiddleZ = Math.abs(MaxZ-zTotal/2)<=5 ||  Math.abs(MinZ-zTotal/2)<=5 ? 0: MiddleZ;
-        }
-        else{
-            MiddleX = Math.abs(MaxX-xTotal/2)<=incBuffer ||  Math.abs(MinX-xTotal/2)<=incBuffer ? 0: MiddleX;
-            MiddleY = Math.abs(MaxY-yTotal/2)<=incBuffer ||  Math.abs(MinY-yTotal/2)<=incBuffer ? 0: MiddleY;
-            MiddleZ = Math.abs(MaxZ-zTotal/2)<=incBuffer ||  Math.abs(MinZ-zTotal/2)<=incBuffer ? 0: MiddleZ;
-        }
-
-        const point= new Point({
-            x:MiddleX,
-            y:MiddleY,
-            z:MiddleZ,
-        });
-
-        // # Calculating real middlePoint --------
-        const bounding = new Bounding({
-            PN:pn,
-            MaxX: MaxX,
-            MinX: MinX,
-            MaxY: MaxY,
-            MinY: MinY,
-            MaxZ: MaxZ,
-            MinZ: MinZ,
-            MiddlePoint:point,
-            W:w,
-            L:l,
-            H:h,
-            WAxis:WAxis,
-            HAxis:HAxis,
-            LAxis:LAxis,
-            High:h
-        });
-
-    resolve(bounding);
-});
+    resolve(isInc);
+})
 
 //(03)
 const GetFeatArr=(circleArr,pn,bounding)=>
@@ -865,7 +817,7 @@ new Promise(async resolve =>{
 });
 
 
-const ReduceDirections=(DirectionArr,pn,bounding)=>
+const ReduceDirections=(DirectionArr,pn)=>
 new Promise(async resolve =>{
        
     const AxisX=DirectionArr.filter((e)=>{if(e.AbsAxis=='X') return e;});
@@ -1049,33 +1001,7 @@ new Promise(async resolve =>{
 });
 
 
-//-------------SUB FUNCTION--------------
-
-function creatiMachine3(pn,setupsNumber){
-    const machine=new Machine({
-        PN:pn,
-        KeyMachine:'3 Axis',
-        SetUpsNumber:setupsNumber
-    });
-    return machine;
-}
-function creatiMachine4(pn,setupsNumber){
-    const machine=new Machine({
-        PN:pn,
-        KeyMachine:'4 Axis',
-        SetUpsNumber:setupsNumber
-    });
-    return machine;
-
-}
-function creatiMachine5(pn,setupsNumber){
-    const machine=new Machine({
-        PN:pn,
-        KeyMachine:'5 Axis',
-        SetUpsNumber:setupsNumber
-    });
-    return machine;
-}
+//-------------SUB FUNCTION---------------------------------------------------
 
 //(01-1)
 const CreateCircel=(rowArr,fileArr,pn,middlePoint)=>
@@ -1469,7 +1395,7 @@ new Promise(async resolve=>{
 
 });
 //(03-2)
-const GetMSPart=(coCirclesArr,pn)=>
+const GetMSPart=(coCirclesArr)=>
 new Promise(async resolve =>{
     let direction=[];
     for(c of coCirclesArr){
@@ -1494,7 +1420,6 @@ function GetUniqKeyForCircle(circleObj){
 function GetUniqKeyForDirection(coCirclesObj){
     return coCirclesObj.AxisB;
 }
-
 
 function GetCircelAxisB(circel) {
     var axis = "";
@@ -1534,44 +1459,6 @@ function GetCircelAxisB(circel) {
 
 }
 
-function GetCircelAxisC(circel) {
-    var axis = "";
-    if (circel.C.x == 1) {
-        axis = "X";
-    }
-    else {
-        if (circel.C.x == -1) {
-            axis = "-X";
-        }
-        else {
-            if (circel.C.y == 1) {
-                axis = "Y";
-            }
-            else {
-                if (circel.C.y == -1) {
-                    axis = "-Y";
-
-                }
-                else {
-                    if (circel.C.z == 1) {
-                        axis = "Z";
-                    }
-                    else {
-                        if (circel.C.z == -1) {
-                            axis = "-Z";
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-    if(axis==""){
-        axis='D';
-    }
-    return axis;
-
-}
 
 function GetGenCircelAxisB(circel) {
     var axis = "";
@@ -1648,7 +1535,7 @@ function GetAsString(directionArr){
 }
 
 //-------------------## DB
-const ClearDB = async (req, res, next) => {
+const ClearDB = async (req, res) => {
     await Circel.deleteMany({});
     await CoCircel.deleteMany({});
     res.status(200).send("ok");
@@ -1660,12 +1547,12 @@ async function SaveAll(docArray){
 
 module.exports = {
     CalculateKeyMachineProcesses,
+    CalculatePartAccsesability,
     GetAroundAxis,
     GetCirclesArr,
     GetFeatArr,
     GetDirectionsArr,
     GetMSPart,
-    GetBounding,
     ReduceDirections,
     CalculateAroundAxisNumber,
     CalculateKeyMachineOptions,

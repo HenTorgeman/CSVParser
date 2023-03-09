@@ -10,6 +10,7 @@ const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
 const CRawMaterial = require("../Model/CRawMaterial");
 const SetUp = require("../Model/SetUp");
 const ProductionSetUp = require("../Model/ProductionSetUp");
+const PartCalculationController = require("../Controllers/Calculation");
 
 const Bounding = require("../Model/BoundingInfo");
 const PartInfo = require("../Model/PartInfo");
@@ -18,6 +19,8 @@ const ColumnsInputFile = require("../Files/ColumnsInputFile.json");
 const ColumnsInputFileByInput = require("../Files/ColumnsInputFileByInput.json");
 
 const ColumnsOutputFile = require("../Files/ColumnsOutputFile.json");
+const ColumnsFullOutputFile = require("../Files/ColumnsOutputFullFile.json");
+
 const ColumnsSurfaceTRFile = require("../Files/ColumnsSurfaceTRFile.json");
 const ColumnsMrrFile = require("../Files/ColumnsMrrFile.json");
 const ColumnsRMFile = require("../Files/ColumnsRmFile.json");
@@ -30,41 +33,49 @@ const CalculateByInputController = require("./CalculationByInput");
 
 const FileAnalysis = require("./KeyMachineProc");
 const PartCalculation = require("../Model/PartCalculation");
+const PartAcssesability = require("../Model/PartAcssesability");
 
-const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CRawMaterial.csv';
-const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CMRR.csv';
-const CMRRFinishingFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/CMRRFinishing.csv';
+const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CRawMaterial.csv';
+const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CMRR.csv';
+const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/SurfaceTreatment.csv';
+const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/InputMD.csv';
 
-const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/SurfaceTreatment.csv';
-const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/InputFiles/InputMD.csv';
-const testFile = '/Users/hentorgeman/Desktop/AutomatedCostingStageA/100PartsMetaData.csv';
+const  OutputPath= '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/ODashboard.csv';
+const MrrOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/OMRRDashboard.csv';
+const AccsesabilityOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/OAccsesabilityDashboard.csv';
+const OutputFullData = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/OFullData.csv';
+const PricesOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/OPriceDashboard.csv';
+const TimesOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/OTimesDashboard.csv';
 
 
 //Files
-
 const ReadInputFile = async (req, res, next) => {
     console.log("## Reading file...."+GetTime());
     let table =fs.readFileSync(inputFile, "utf8").split("\r\n");
     const arr=[];
     let partsCount=table.length-1;
+    let genIndex=0;
 
     for(el of table){
+        genIndex++;
         let row=el.split(",");
         let p=row[ColumnsInputFileByInput.PN];
         let index=row[ColumnsInputFileByInput.Index];
         if(p!="Part Number" && p!=""){
-
-            // if(p=='10015132' || p=='10201501'){
-            //     console.log("BreakPoint");
-            // }
             console.log("Calculate : "+p+"............"+index+" / "+partsCount);
+            let filePathValid='not valid file';
+
+            if (fs.existsSync(row[ColumnsInputFileByInput.file])) {
+                filePathValid=row[ColumnsInputFileByInput.file];
+            }
+
             const part=new Part({
                 PN:row[ColumnsInputFileByInput.PN],
                 Index:row[ColumnsInputFileByInput.Index],
-                FilePath:row[ColumnsInputFileByInput.file],
-                ComplexityLevel:row[ColumnsInputFileByInput.ComplexityLevel],
+                FilePath:filePathValid,
                 KeyMachine:row[ColumnsInputFileByInput.KeyMachine],
             });
+
             const centroidPoint=new Point({
                 x:row[ColumnsInputFileByInput.CenterX],
                 y:row[ColumnsInputFileByInput.CenterY],
@@ -78,6 +89,8 @@ const ReadInputFile = async (req, res, next) => {
                 AroundAxis:row[ColumnsInputFileByInput.AroundAxis],
                 MD:row[ColumnsInputFileByInput.MD],                
                 STR:false,
+                ComplexityLevel:row[ColumnsInputFileByInput.ComplexityLevel],
+                HolesTreads:row[ColumnsInputFileByInput.HolesTreads]
             });
 
             const boundingInfo=new Bounding({
@@ -95,23 +108,40 @@ const ReadInputFile = async (req, res, next) => {
                 SurfaceTreatment:row[ColumnsInputFileByInput.SurfaceTreatment],
             });
 
-            
+            boundingInfo.Volum=CalculateByInputController.GetPartGrossVolume(boundingInfo.L,boundingInfo.W,boundingInfo.H);
+            boundingInfo.VolumGroup=CalculateByInputController.GetPartVolumeGroup(boundingInfo.Volum);
+            boundingInfo.SurfaceGroup=CalculateByInputController.GetPartSurfaceGroup(boundingInfo.Surface);
             boundingInfo.Size=CalculateByInputController.GetPartSize(boundingInfo.L,boundingInfo.W,boundingInfo.H);
             boundingInfo.Shape=CalculateByInputController.GetPartShape(boundingInfo.L,boundingInfo.W,boundingInfo.H);
-            boundingInfo.Volum=CalculateByInputController.GetPartGrossVolume(boundingInfo.L,boundingInfo.W,boundingInfo.H);
 
             const RawMaterial = await CRawMaterial.find({ RawMaterial:row[ColumnsInputFileByInput.RM]}).exec();
             part.RawMaterial=RawMaterial[0];
             part.BoundingInfo=boundingInfo;
             part.BoundingInfo.ChargableWeight=CalculateByInputController.GetPartChargableWeight(part);
-
             part.PartInfo=partInfo;
 
+            //Added for Accsesability.
+            const Calculation=await FileAnalysis.CalculateKeyMachineProcesses(part);
+            if(Calculation!=null){
+                part.PartCalculation=Calculation;
+                const Acssesability=await FileAnalysis.CalculatePartAccsesability(part);
+                if(Acssesability!=null)
+                    part.PartAcssesability=Acssesability;
+                else {
+                    part.PartAcssesability=null;
+                }
+            }
+            else{
+                part.PartCalculation=null;
+
+            }
+           
             //let str=row[ColumnsInputFile.STR]=='Y'?true:false;
             let str = CalculateByInputController.GetPartSTR(part);
             part.PartInfo.STR=str;
-            const productionProcesses=await CalculateByInputController.CalculateProduction(part);
 
+
+            const productionProcesses=await CalculateByInputController.CalculateProduction(part);
             if (productionProcesses != null) {
                     part.ProductionProcesses=productionProcesses;
                     part.Cost=await CalculateByInputController.CalculateCost(part);
@@ -124,11 +154,11 @@ const ReadInputFile = async (req, res, next) => {
 
                     for(let i=0;i<productionProcesses.length;i++){
                         let proc=productionProcesses[i];
-                        if(proc.ProcessName=='Roughing'){
+                        if(proc.Type=='Additional'){
                             rughingTime+=proc.Time;                  
                         }
                         else{
-                            if(proc.ProcessName=='Finishing'){
+                            if(proc.Type=='Key'){
                                 finishingTime+=proc.Time;
                             }
                         }
@@ -137,36 +167,38 @@ const ReadInputFile = async (req, res, next) => {
                     part.RoughingMinuets=rughingTime;
                     part.FinishingMinuets=finishingTime;
 
-
                     arr.push(part);
             }
 
         }
     }
     SaveAll(arr);
+    console.log("genIndex"+genIndex);
     res.status(200).send('OK');
 }
+
 const ReadInputFileScript = async (req, res, next) => {
     console.log("## Reading file...."+GetTime());
     let table =fs.readFileSync(inputFile, "utf8").split("\r\n");
     const arr=[];
-    let partsCount=table.length-1;
-
+    
     for(el of table){
         let row=el.split(",");
         let p=row[ColumnsInputFile.PN];
         let index=row[ColumnsInputFile.Index];
         if(p!="Part Number" && p!=""){
-
-            console.log("Calculate : "+p+"............"+index+" / "+partsCount);
+            let filePathValid='not valid file';
+            if (fs.existsSync(row[ColumnsInputFile.file])) {
+                filePathValid=row[ColumnsInputFile.file];
+            }
 
             const part=new Part({
                 PN:row[ColumnsInputFile.PN],
                 Index:index,
-                FilePath:row[ColumnsInputFile.file],
-                ComplexityLevel:row[ColumnsInputFile.ComplexityLevel],
+                FilePath:filePathValid,
                 KeyMachine:row[ColumnsInputFile.KeyMachine],
             });
+
             const centroidPoint=new Point({
                 x:row[ColumnsInputFile.CenterX],
                 y:row[ColumnsInputFile.CenterY],
@@ -201,6 +233,7 @@ const ReadInputFileScript = async (req, res, next) => {
             const partInfo=new PartInfo({
                 KeyMachine:row[ColumnsInputFile.KeyMachine],            
                 STR:str,
+                ComplexityLevel:row[ColumnsInputFile.ComplexityLevel],
             });
 
             part.PartInfo=partInfo;
@@ -257,13 +290,13 @@ const ReadInputFileScript = async (req, res, next) => {
     res.status(200).send('OK');
 }
 
-//Print
-const PrintByInput = async (req, res, next) => {
+//Print: by file inputs
+const PrintDashboard = async (req, res, next) => {
 
     const titles = []
     const data=[];
 
-    for(let i=0;i<18;i++){
+    for(let i=0;i<20;i++){
         let col1=ColumnsOutputFile[i.toString()];
         titles.push(col1);
     }   
@@ -332,7 +365,8 @@ const PrintByInput = async (req, res, next) => {
     }
 
     const csvData = data.map(d => d.join(',')).join('\n');
-    fs.writeFile('/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/ResultFile.csv', csvData, (error) => {
+    // fs.writeFile('/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/ResultFile.csv', csvData, (error) => {
+    fs.writeFile(OutputPath, csvData, (error) => {
     
     if (error) {
         console.error(error);
@@ -343,8 +377,7 @@ const PrintByInput = async (req, res, next) => {
       
     res.status(200).send(data);
 }   
-
-//Print
+//Print: by calculation
 const Print = async (req, res, next) => {
 
     const titles = []
@@ -425,6 +458,460 @@ const Print = async (req, res, next) => {
       
     res.status(200).send(data);
 }   
+//Print: for analyzing mrr groups
+const PrintMrrDashboard = async (req, res, next) => {
+
+    const titles = []
+    const data=[];
+    titles.push("Part Number");
+    titles.push("Complexity");
+    titles.push("Accsesability");
+    titles.push("Raw material");
+    titles.push("L");
+    titles.push("W");
+    titles.push("H");
+    titles.push("Side Buffer");
+    titles.push("RM Volume mm3");
+    titles.push("Part Volume mm3");
+    titles.push("Remove Volume mm3");
+    titles.push("Removal Rate");
+    titles.push("Volume Group");
+    titles.push("CM3 In 1Min");
+    titles.push("Roughing Minitues");
+    titles.push("Part Surface mm2");
+    titles.push("Surface group");
+    titles.push("CM2 In 1Min");
+    titles.push("Finishing Minuets");
+
+    const parts =await Part.find({}).exec();
+    data.push(titles);
+    for(index in parts){
+        let p=parts[index];
+        let pn =p.PN;
+        let complexity=p.PartInfo.ComplexityLevel;
+        let Accsesability=0;
+        let rm=p.RawMaterial.RawMaterial;
+        let l=p.BoundingInfo.L;
+        let h=p.BoundingInfo.H;
+        let w=p.BoundingInfo.W;
+        let sidebuffer=values.RmBoundingBuffer;
+        let rmVolume=p.BoundingInfo.Volum;
+        let removeMM=(rmVolume-p.BoundingInfo.VolumNet);
+        let removalRate=((rmVolume-p.BoundingInfo.VolumNet)/rmVolume)*100;
+        let volumeNet=p.BoundingInfo.VolumNet;
+        let volumeGroup=p.BoundingInfo.VolumGroup;
+        let surface=p.BoundingInfo.Surface;
+        let surfaceGroup=p.BoundingInfo.SurfaceGroup;
+        let roughingMin=p.RoughingMinuets;
+        let finishingMin=p.FinishingMinuets;
+        const cm31min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.VolumGroup,'Roughing');
+        const cm21min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.SurfaceGroup,'Finishing');
+
+        const dataRow=[];
+        dataRow.push(pn);
+        dataRow.push(complexity);
+        dataRow.push(Accsesability);
+        dataRow.push(rm);
+        dataRow.push(l);
+        dataRow.push(w);
+        dataRow.push(h);
+        dataRow.push(sidebuffer);
+        dataRow.push(rmVolume);
+        dataRow.push(volumeNet);
+        dataRow.push(removeMM);
+        dataRow.push(removalRate);
+        dataRow.push(volumeGroup);
+        dataRow.push(cm31min);
+        dataRow.push(roughingMin);
+        dataRow.push(surface);
+        dataRow.push(surfaceGroup);
+        dataRow.push(cm21min);
+        dataRow.push(finishingMin);
+        data.push(dataRow);
+    }
+
+    const csvData = data.map(d => d.join(',')).join('\n');
+    fs.writeFile(MrrOutputPath, csvData, (error) => {
+    if (error) {
+        console.error(error);
+      } else {
+        console.log('The CSV file was written successfully');
+      }
+    });
+      
+    res.status(200).send(data);
+}  
+//Print: for analyzing mrr groups
+const PrintFullData = async (req, res, next) => {
+
+    const titles = []
+    const data=[];
+
+    for(let i=1;i<47;i++){
+        let col1=ColumnsFullOutputFile[i.toString()];
+        titles.push(col1);
+    }   
+    data.push(titles);
+    const parts =await Part.find({}).exec();
+    for(index in parts){
+        let p=parts[index];
+        let pn =p.PN;
+        let complexity=p.PartInfo.ComplexityLevel;
+        let Accsesability=0;
+        let rm=p.RawMaterial.RawMaterial;
+        let l=p.BoundingInfo.L;
+        let h=p.BoundingInfo.H;
+        let w=p.BoundingInfo.W;
+        let sidebuffer=values.RmBoundingBuffer;
+        let rmVolume=p.BoundingInfo.Volum;
+        let removeMM=(rmVolume-p.BoundingInfo.VolumNet);
+        let removalRate=((rmVolume-p.BoundingInfo.VolumNet)/rmVolume)*100;
+        let volumeNet=p.BoundingInfo.VolumNet;
+        let volumeGroup=p.BoundingInfo.VolumGroup;
+        let surface=p.BoundingInfo.Surface;
+        let surfaceGroup=p.BoundingInfo.SurfaceGroup;
+        let roughingMin=p.RoughingMinuets;
+        let finishingMin=p.FinishingMinuets;
+        const cm31min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.VolumGroup,'Roughing');
+        const cm21min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.SurfaceGroup,'Finishing');
+
+        //Accesability
+        let featNumber='';
+        let rows='';
+        let maxRadius='';
+        let minRadius='';
+        let abNormalDirections='';
+        let MinimumDistance='';
+        let MaximumDistance='';
+        let isInch=''
+
+        if(p.PartAcssesability!=null){ 
+
+            featNumber=p.PartAcssesability.FeatursNumber;
+            rows=p.PartAcssesability.StepRowsCount;
+            maxRadius=p.PartAcssesability.MaximumCircleRadius;
+            minRadius=p.PartAcssesability.MinimumCircleRadius;
+            abNormalDirections=p.PartAcssesability.AbNormalDirectionsNumber;
+            MinimumDistance=p.PartAcssesability.MinimumDistanceBetweenCircles;
+            MaximumDistance=p.PartAcssesability.MaximumDistanceBetweenCircles;
+            isInch=p.PartCalculation.IsInch;
+        }
+        else{
+             featNumber='NotCalculated';
+             rows='NotCalculated';
+             maxRadius='NotCalculated';
+             minRadius='NotCalculated';
+             abNormalDirections='NotCalculated';
+             MinimumDistance='NotCalculated';
+             MaximumDistance='NotCalculated';
+             isInch='NotCalculated';
+        }
+
+
+        //Production
+        let keyMachine=p.PartInfo.KeyMachine;
+        let isStr=p.PartInfo.STR;
+        let keyProcessNumber=0;
+        let additionlProcessNumber=0;
+
+        p.ProductionProcesses.map((p)=>{
+            if(p.Type=='Key'){
+                keyProcessNumber+= p.ProcessesNumber;
+            }
+        });
+        p.ProductionProcesses.map((p)=>{
+            if(p.Type=='Additional'){
+                additionlProcessNumber+= p.ProcessesNumber;
+            }
+        });
+        let keyMachineProcessNumber=keyProcessNumber;
+        let AdditionalProcess=additionlProcessNumber;
+        let MachiningDirections=p.PartInfo.MD;
+        let AroundAxis=p.PartInfo.AroundAxis;
+        let MDSecondaeyAxis="Not calculated";
+        let PartNetVolume=p.BoundingInfo.VolumNet;
+        let PartGrossVolume=p.BoundingInfo.Volum;
+        let PartSurface=p.BoundingInfo.Surface;
+        let NumberOfHoles="Not calculated";
+        let RoughingMinuets=p.RoughingMinuets;
+        let FinishingMinuets=p.FinishingMinuets;
+        let FineHolesThreads="Not calculated";
+        let HolesTime="Not calculated";
+        let UnitCost=p.Cost;
+        let SetupCost=p.BatchCost;
+        let UnitLeadTimeHours=(p.LT/60);
+        let BatchLeadTimeDays=p.BatchTime;
+
+        //Prices and LT
+    
+        let roughing=null;
+        p.ProductionProcesses.map((p)=>{
+            if(p.ProcessName=='Roughing'){
+                roughing= p;
+            }
+        });
+        let finishing=null;
+         p.ProductionProcesses.map((p)=>{
+            if(p.ProcessName=='Finishing'){
+                finishing=p;
+            }
+        });
+
+        let RoughingCost=roughing.Cost;
+        let FinishingCost=finishing.Cost;
+        let surfaceTreatmentCost=0;
+        let surfaceTreatmentLT=0;
+
+        let materialCost=0;
+        let materialLT=0;
+
+
+        // # SurfaceTreatment
+        let strObj=await PartCalculationController.GetSurfaceTreatment(p.BoundingInfo.SurfaceTreatment);
+        if(strObj!=null){
+            let surfaceDM=p.BoundingInfo.Surface/values.UnitConvert.Dm2ToMm2;
+            surfaceTreatmentCost=surfaceDM*strObj.Cost;
+            surfaceTreatmentLT=strObj.LeadTime;
+        }
+        materialLT=p.RawMaterial.LT;
+        materialCost=p.RawMaterial.PricePerKg;
+
+        // // # Packing
+        // let chargableWeight=parts.BoundingInfo.ChargableWeight;
+        // let packingCost=chargableWeight*values.Shipping.China.NetToGrossWeight*(values.Shipping.China.DomesticDeliveryCostPerKg+values.Shipping.China.PackingCostPerKG);
+        // cost+=packingCost;
+
+        const dataRow=[];
+        dataRow.push(pn);           //COL 1
+        dataRow.push(complexity);
+        dataRow.push(Accsesability);
+        dataRow.push(rm);
+        dataRow.push(l.toFixed(1));
+        dataRow.push(w.toFixed(1));
+        dataRow.push(h.toFixed(1));
+        dataRow.push(sidebuffer);
+        dataRow.push(rmVolume.toFixed(1));
+        dataRow.push(volumeNet.toFixed(1));
+        dataRow.push(removeMM.toFixed(1));
+        dataRow.push(removalRate.toFixed(1));
+        dataRow.push(volumeGroup);
+        dataRow.push(cm31min.toFixed(1));
+        dataRow.push(roughingMin);
+        dataRow.push(surface.toFixed(1));
+        dataRow.push(surfaceGroup);
+        dataRow.push(cm21min.toFixed(1));
+        dataRow.push(finishingMin.toFixed(1)); //COL 19
+        dataRow.push('Not Calculated yet'); //
+        dataRow.push('Not Calculated yet'); //
+
+        dataRow.push(rows);
+        dataRow.push(featNumber);
+        dataRow.push(maxRadius);
+        dataRow.push(minRadius);
+        dataRow.push(MaximumDistance);
+        dataRow.push(MinimumDistance);
+        dataRow.push(abNormalDirections);
+        dataRow.push(isInch);
+
+        dataRow.push(FinishingCost);
+        dataRow.push(RoughingCost);
+        dataRow.push(materialCost);
+        dataRow.push(materialLT);
+        dataRow.push(surfaceTreatmentCost);
+        dataRow.push(surfaceTreatmentLT);
+        
+        dataRow.push(isStr);
+        dataRow.push(MachiningDirections);
+        dataRow.push(AroundAxis);
+        dataRow.push(MDSecondaeyAxis);
+        dataRow.push(AdditionalProcess);
+
+        dataRow.push(keyMachine);
+        dataRow.push(keyMachineProcessNumber);
+        dataRow.push(UnitCost.toFixed(2));
+        dataRow.push(SetupCost.toFixed(2));
+        dataRow.push(UnitLeadTimeHours.toFixed(2));
+        dataRow.push(BatchLeadTimeDays.toFixed(2));
+        data.push(dataRow);
+    }
+
+    const csvData = data.map(d => d.join(',')).join('\n');
+    fs.writeFile(OutputFullData, csvData, (error) => {
+    if (error) {
+        console.error(error);
+      } else {
+        console.log('The CSV file was written successfully');
+      }
+    });
+      
+    res.status(200).send(data);
+}  
+//Print: for analyzing mrr groups
+const PrintAccsesabilityDashboard = async (req, res, next) => {
+
+    const titles = []
+    const data=[];
+    titles.push("Part Number");
+    titles.push("Complexity");
+    titles.push("Step File Rows");
+    titles.push("Number of Feateures");
+    titles.push("Max Radius");    
+    titles.push("Min Radius");    
+    titles.push("Max distance between featuers");    
+    titles.push("Min distance between featuers");
+    titles.push("AbNormal directions");
+    titles.push("IsInch?");
+
+
+
+
+    const parts =await Part.find({}).exec();
+    data.push(titles);
+    for(index in parts){
+        let p=parts[index];
+        let pn =p.PN;
+        let complexity=p.PartInfo.ComplexityLevel;
+        let featNumber='';
+        let rows='';
+        let maxRadius='';
+        let minRadius='';
+        let abNormalDirections='';
+        let MinimumDistance='';
+        let MaximumDistance='';
+        let isInch=''
+
+
+        if(p.PartAcssesability!=null){ 
+
+            featNumber=p.PartAcssesability.FeatursNumber;
+             rows=p.PartAcssesability.StepRowsCount;
+             maxRadius=p.PartAcssesability.MaximumCircleRadius;
+             minRadius=p.PartAcssesability.MinimumCircleRadius;
+             abNormalDirections=p.PartAcssesability.AbNormalDirectionsNumber;
+             MinimumDistance=p.PartAcssesability.MinimumDistanceBetweenCircles;
+             MaximumDistance=p.PartAcssesability.MaximumDistanceBetweenCircles;
+             isInch=p.PartCalculation.IsInch;
+        }
+        else{
+             featNumber='NotCalculated';
+             rows='NotCalculated';
+             maxRadius='NotCalculated';
+             minRadius='NotCalculated';
+             abNormalDirections='NotCalculated';
+             MinimumDistance='NotCalculated';
+             MaximumDistance='NotCalculated';
+             isInch='NotCalculated';
+        }
+
+        const dataRow=[];
+        dataRow.push(pn);
+        dataRow.push(complexity);
+        dataRow.push(rows);
+        dataRow.push(featNumber);
+        dataRow.push(maxRadius);
+        dataRow.push(minRadius);
+        dataRow.push(MaximumDistance);
+        dataRow.push(MinimumDistance);
+        dataRow.push(abNormalDirections);
+        dataRow.push(isInch);
+        data.push(dataRow);
+    }
+
+    const csvData = data.map(d => d.join(',')).join('\n');
+    fs.writeFile(AccsesabilityOutputPath, csvData, (error) => {
+    if (error) {
+        console.error(error);
+      } else {
+        console.log('The CSV file was written successfully');
+      }
+    });
+      
+    res.status(200).send(data);
+}  
+
+//Print: for analyzing mrr groups
+const PrintTimesDashboard = async (req, res, next) => {
+
+    const titles = []
+    const data=[];
+
+    for(let i=0;i<18;i++){
+        let col1=ColumnsOutputFile[i.toString()];
+        titles.push(col1);
+    }   
+    data.push(titles);
+    const parts =await Part.find({}).exec();
+        
+    for(index in parts){
+        let p=parts[index];
+        let pn =p.PN;
+        let keyMachine=p.PartInfo.KeyMachine;
+        let isStr=p.PartInfo.STR;
+        
+        let keyProcessesObj=p.ProductionProcesses.filter((p)=>{
+            if(p.Type=='Key')
+                return p;
+        });
+        let AdditionalProcessObj=p.ProductionProcesses.filter((p)=>{
+            if(p.Type=='Additional')
+                return p;
+        });
+
+        let keyMachineProcessNumber=keyProcessesObj.length;
+        let AdditionalProcess=AdditionalProcessObj.length;
+        let MachiningDirections=p.PartInfo.MD;
+        let AroundAxis=p.PartCalculation.AroundAxises.length;
+        let MDSecondaeyAxis=AroundAxis>1?p.PartCalculation.AroundAxises[1].Directions.length:0;
+        let PartNetVolume=p.BoundingInfo.VolumNet;
+        let PartGrossVolume=p.BoundingInfo.Volum;
+        let PartSurface=p.BoundingInfo.Surface;
+        let NumberOfHoles=p.PartCalculation.FeatursNumber;
+        let RoughingMinuets=p.RoughingMinuets;
+        let FinishingMinuets=p.FinishingMinuets;
+        let FineHolesThreads="";
+        let HolesTime="";
+        let UnitCost=p.Cost;
+        let SetupCost=p.BatchCost;
+        let UnitLeadTimeHours=(p.LT/60);
+        let BatchLeadTimeDays=p.BatchTime;
+        const dataRow=[];
+        dataRow.push(pn);
+        dataRow.push(keyMachine);
+        dataRow.push(keyMachineProcessNumber);
+        dataRow.push(isStr);
+        dataRow.push(AdditionalProcess);
+        dataRow.push(MachiningDirections);
+        dataRow.push(AroundAxis);
+        dataRow.push(MDSecondaeyAxis);
+        dataRow.push(PartNetVolume.toFixed(2));
+        dataRow.push(PartGrossVolume.toFixed(2));
+        dataRow.push(PartSurface.toFixed(2));
+        dataRow.push(NumberOfHoles);
+        dataRow.push(RoughingMinuets.toFixed(2));
+        dataRow.push(FinishingMinuets.toFixed(2));
+        dataRow.push(FineHolesThreads);
+        dataRow.push(HolesTime);
+        dataRow.push(UnitCost.toFixed(2));
+        dataRow.push(SetupCost.toFixed(2));
+        dataRow.push(UnitLeadTimeHours.toFixed(2));
+        dataRow.push(BatchLeadTimeDays.toFixed(2));
+        data.push(dataRow);
+    }
+
+    const csvData = data.map(d => d.join(',')).join('\n');
+    fs.writeFile('/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Test files/ResultFile.csv', csvData, (error) => {
+    
+    if (error) {
+        console.error(error);
+      } else {
+        console.log('The CSV file was written successfully');
+      }
+    });
+      
+    res.status(200).send(data);
+}  
+
+
 const ReadCMrrFile = async (req, res, next) => {
     console.log("## Reading CMrrFile...."+GetTime());
     let table =fs.readFileSync(CMrrFile, "utf8").split("\r\n");
@@ -579,7 +1066,6 @@ const ClearRawMaterialDB = async (req, res, next) => {
 async function SaveAll(docArray){
     return Promise.all(docArray.map((doc) => doc.save()));
 }
-
 //Heplers
 function GetTime(){
     let date_ob = new Date();
@@ -603,5 +1089,9 @@ module.exports = {
     ClearRawMaterialDB,
     ReadTestFile,
     Print,
-    PrintByInput
+    PrintDashboard,
+    PrintMrrDashboard,
+    PrintAccsesabilityDashboard,
+    PrintFullData,
+
 };

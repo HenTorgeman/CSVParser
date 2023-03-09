@@ -21,5 +21,6 @@
     "MD":19,
     "KeyMachine":20,
     "KeyProcesses":21,
-    "AdditionProcesses":22
+    "AdditionProcesses":22,
+    "HolesTreads":23
 }

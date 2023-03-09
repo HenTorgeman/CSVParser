@@ -41,6 +41,12 @@ const BoundingSchema = new mongoose.Schema({
         type:String,
         enum: ['Small','Medium','Large']
     },
+    SurfaceGroup:{
+        type:String,
+    },
+    VolumGroup:{
+        type:String,
+    },
     Shape:{
         type:String,
         enum:['CUBE','PLATE']

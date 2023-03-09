@@ -4,6 +4,9 @@ const PartInfoSchema = new mongoose.Schema({
     KeyMachine:{
         type: String
     },
+    ComplexityLevel:{
+        type:Number
+    },
     STR:{
         type:Boolean
     },
@@ -17,6 +20,9 @@ const PartInfoSchema = new mongoose.Schema({
         type: Number
     },
     MD:{
+        type: Number
+    },
+    HolesTreads:{
         type: Number
     }
 });

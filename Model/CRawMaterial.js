@@ -12,7 +12,7 @@ const RawMaterialSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
-    Price:{
+    PricePerKg:{
         type: Number,
         default: 0,
     },

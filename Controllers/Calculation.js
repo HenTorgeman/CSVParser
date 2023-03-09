@@ -13,7 +13,7 @@ const CalculateProduction=async (part,keyProcesses)=>{
 
     //# Roughing
      if(roughingSetupNumber>0){
-        const roughingTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
+        const roughingTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'Roughing');
         const mrrVolum =GetPartMrrNumber(part.BoundingInfo);
         const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
         const roughingTime = mrrVolumCm/roughingTimePerCM;
@@ -25,7 +25,7 @@ const CalculateProduction=async (part,keyProcesses)=>{
      }
 
     //# ProcessHolder
-        const holderTimePerPart = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Holder');
+        const holderTimePerPart = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'Holder');
         const processHolder= ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,1);
 
         if(isHolderSetupNeeded==true){
@@ -74,7 +74,7 @@ function GetPartSTR(part){
     
     if(part.RawMaterial.Material=='Aluminum'){
 
-        if(part.ComplexityLevel==0){
+        if(part.PartInfo.ComplexityLevel==0){
             if(part.BoundingInfo.Size=='Small'){
                 if(mrrPrecentage>values.StrCondition.VeryHighSmall){
                     str=true;
@@ -94,7 +94,7 @@ function GetPartSTR(part){
             }
         }
 
-        if(part.ComplexityLevel==1){
+        if(part.PartInfo.ComplexityLevel==1){
             if(part.BoundingInfo.Size=='Small'){
                 if(mrrPrecentage>values.StrCondition.HighSmall){
                     str=true;
@@ -112,7 +112,7 @@ function GetPartSTR(part){
             }
         }
         
-        if(part.ComplexityLevel==2){
+        if(part.PartInfo.ComplexityLevel==2){
             if(part.BoundingInfo.Size=='Large'){
                 if(mrrPrecentage>values.StrCondition.MiddleLarge){
                     str=true;
@@ -160,7 +160,7 @@ function GetPartProcessRemoveHolderSetUp(part){
 }
 async function CalcPartRoughingSetupTime(part){
    
-    const minutes= await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.Size,'Roughing');
+    const minutes= await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'Roughing');
     const mrrVolum=GetPartMrrNumber(part.BoundingInfo);
     return mrrVolum/minutes;
 }
@@ -168,13 +168,13 @@ async function GetPartProcessHolderTime(part){
     let isProcessHolderNeeded=GetPartProcessHolderSetUp(part);
     if(isProcessHolderNeeded!=true) return 0;
     else{
-        const minutes= await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.size,'Holder');
+        const minutes= await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'Holder');
         return minutes;
 
     }
 }
 async function GetPartFinishingTime(part){
-    const minutes= await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.size,'Finishing');
+    const minutes= await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.SurfaceGroup,'Finishing');
     return minutes;      
 }
 
@@ -188,6 +188,71 @@ function GetPartMrrPrecentage(boundingInfo)
     let MrrNumber=GetPartMrrNumber(boundingInfo);
     let MrrPrecentage=( MrrNumber/boundingInfo.Volum)*100;
     return MrrPrecentage;
+}
+function GetPartSurfaceGroup(surface){
+    let group='';
+    if(surface<=values.SizeGroupsMM.Surefac.S25)
+        group='S25';
+    else{
+        if(surface>values.SizeGroupsMM.Surefac.S25 && surface<=values.SizeGroupsMM.Surefac.S55)
+        {
+            group='S55';
+        }
+        if(surface>values.SizeGroupsMM.Surefac.S55 &&surface<=values.SizeGroupsMM.Surefac.S100)
+        {
+            group='S100';
+        }
+        if(surface>values.SizeGroupsMM.Surefac.S100 &&surface<=values.SizeGroupsMM.Surefac.S200)
+        {
+            group='S200';
+        }
+        if(surface>values.SizeGroupsMM.Surefac.S200 && surface<=values.SizeGroupsMM.Surefac.S450)
+        {
+            group='S450';
+        }
+        if(surface>values.SizeGroupsMM.Surefac.S450 &&surface<=values.SizeGroupsMM.Surefac.S600)
+        {
+            group='S600';
+        }
+        if(surface>values.SizeGroupsMM.Surefac.S600)
+        {
+            group='S750';
+        }  
+    }
+    return group;
+}
+function GetPartVolumeGroup(volume){
+    let group='';
+    if(volume<=values.SizeGroupsMM.Volume.V10000)
+    group='V10000';
+    else{
+        if(volume>values.SizeGroupsMM.Volume.V10000 && volume<=values.SizeGroupsMM.Volume.V30000)
+        {
+            group='V30000';
+        }
+        if(volume>values.SizeGroupsMM.Volume.V30000 && volume<=values.SizeGroupsMM.Volume.V100000)
+        {
+            group='V100000';
+        }
+        if(volume>values.SizeGroupsMM.Volume.V100000 && volume<=values.SizeGroupsMM.Volume.V300000)
+        {
+            group='V300000';
+        }
+        if(volume>values.SizeGroupsMM.Volume.V300000 && volume<=values.SizeGroupsMM.Volume.V1000000)
+        {
+            group='V1000000';
+        }
+        if(volume>values.SizeGroupsMM.Volume.V1000000 && volume<=values.SizeGroupsMM.Volume.V3000000)
+        {
+            group='V3000000';
+        }
+        if(volume>values.SizeGroupsMM.Volume.V3000000)
+        {
+            group='V3000001';
+        }
+    
+    }
+    return group;
 }
 function GetPartSize(L,W,H){
     let size="";

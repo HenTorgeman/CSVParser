@@ -27,6 +27,10 @@ const PartCalculationSchema = new mongoose.Schema({
     KeyProductionProcesses:{
         type:[Object],
     },
+    IsInch:{
+        type:Boolean,
+        default:false
+    }
 
 });
 module.exports = mongoose.model("PartCalculation", PartCalculationSchema);

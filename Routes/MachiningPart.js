@@ -14,6 +14,9 @@ router.post("/ClearCMrrDB", Controller.ClearCMrrDB);
 router.post("/ClearRawMaterialDB", Controller.ClearRawMaterialDB);
 router.post("/ReadTestFile", Controller.ReadTestFile);
 router.get("/Print", Controller.Print);
-router.get("/PrintByInput", Controller.PrintByInput);
+router.get("/PrintDashboard", Controller.PrintDashboard);
+router.get("/PrintMrrDashboard", Controller.PrintMrrDashboard);
+router.get("/PrintAccsesabilityDashboard", Controller.PrintAccsesabilityDashboard);
+router.get("/PrintFullData", Controller.PrintFullData);
 
 module.exports = router;

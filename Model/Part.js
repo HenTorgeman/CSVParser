@@ -14,10 +14,10 @@ const PartSchema = new mongoose.Schema({
     BoundingInfo:{
         type:Object
     },
-    ComplexityLevel:{
-        type:Number
-    },
     PartCalculation:{
+        type:Object
+    },
+    PartAcssesability:{
         type:Object
     },
     PartInfo:{
@@ -26,19 +26,16 @@ const PartSchema = new mongoose.Schema({
     ProductionProcesses:{
         type:[Object]
     },
-    STR:{
-        type:Boolean
-    },
     RawMaterial:{
         type:Object
-    },
-    Cost:{
-        type:Number
     },
     RoughingMinuets:{
         type:Number
     },
     FinishingMinuets:{
+        type:Number
+    },
+    Cost:{
         type:Number
     },
     LT:{
@@ -50,7 +47,5 @@ const PartSchema = new mongoose.Schema({
     BatchCost:{
         type:Number
     },
-   
-    
 });
 module.exports = mongoose.model("Part", PartSchema);

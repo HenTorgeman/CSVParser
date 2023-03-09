@@ -6,19 +6,28 @@ const KeyProcessesOption = require("../Model/KeyProcessesOption");
 
 const values = require("../Files/SavedValues.json");
 
-function CreateRoughingProcess(processName,minutes,processNumber){
-    let cost=minutes*values.Machines["Machine3AxisCostMin"];
+function CreateRoughingProcess(processName,minutes,processNumber,machine){
+    let cost=0;
+    if(machine=='3 Axis'){
+        cost=minutes*values.Machines["Machine3AxisCostMin"];
+    }
+    if(machine=='4 Axis'){
+        cost=minutes*values.Machines["Machine4AxisCostMin"];
+
+    }
+    if(machine=='4 Axis'){
+        cost=minutes*values.Machines["Machine5AxisCostMin"];
+    }
+    
     const productionProcess=new ProductionProcesses ({
             ProcessName:processName,
             Type:'Additional',
-            Machine:'3 Axis',
+            Machine:machine,
             ProcessesNumber:processNumber,
             Time:minutes,
             Cost:cost
     });
     return productionProcess;
-
-      
 }
 
 function Create3AxisProcess(processName,minutes,processNumber){
