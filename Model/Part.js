@@ -29,6 +29,15 @@ const PartSchema = new mongoose.Schema({
     RawMaterial:{
         type:Object
     },
+    HolesMinuets:{
+        type:Number
+    },
+    ThreadsMinuets:{
+        type:Number
+    },
+    RoughingMinuets:{
+        type:Number
+    },
     RoughingMinuets:{
         type:Number
     },

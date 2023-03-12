@@ -22,5 +22,7 @@
     "KeyMachine":20,
     "KeyProcesses":21,
     "AdditionProcesses":22,
-    "HolesTreads":23
+    "Threads":23,
+    "Holes":24
+
 }

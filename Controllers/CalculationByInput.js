@@ -2,6 +2,7 @@ const CMrr = require("../Model/CMrr");
 const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
 const ProcessController = require("./ProductionProcesses");
 const values = require("../Files/SavedValues.json");
+const { off } = require("../Model/Part");
 
 
 const CalculateProduction=async (part)=>{
@@ -20,9 +21,7 @@ const CalculateProduction=async (part)=>{
         const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
         let roughingTime = mrrVolumCm/roughingTimePerCM;
 
-        const minutesPerHoleRoughing = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'HTRoughing');
-        const minutesHolesRoughing=minutesPerHoleRoughing*part.PartInfo.HolesTreads;
-        roughingTime+=minutesHolesRoughing;
+
 
         const process=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber,'3 Axis'):ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber,keyMachine);
         process.Index=processIndex;
@@ -56,9 +55,7 @@ const CalculateProduction=async (part)=>{
         // const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM)+(surfaceCm/semifinishingSetupTimePerCM);
         let finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM);
 
-        const minutesPerHoleFinishing = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'HTFinishing');
-        const minutesHolesFinishing=minutesPerHoleFinishing*part.PartInfo.HolesTreads;
-        finishingTimeMinutes+=minutesHolesFinishing;
+
         //# In script Version : will be based on around axis and around axis secondary.
                 if(keyMachine=='4 Axis'){
                     let process= ProcessController.Create4AxisProcess('Finishing',finishingTimeMinutes,finishingSetupNumber);
@@ -388,7 +385,20 @@ async function CalculateCost(part){
     for(let i=0;i<part.ProductionProcesses.length;i++){
         let process=part.ProductionProcesses[i];
         cost+=process.Cost;
-   }
+    }
+
+    let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
+    let keyMachine=part.PartInfo.KeyMachine;
+
+    const HolesProcess=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Roughing',part.HolesMinuets,0,'3 Axis'):ProcessController.CreateRoughingProcess('Roughing',part.HolesMinuets,0,keyMachine);
+    if(HolesProcess!=null){
+        cost+=HolesProcess.Cost;
+    }
+    const TreadsProcess=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Roughing',part.ThreadsMinuets,0,'3 Axis'):ProcessController.CreateRoughingProcess('Roughing',part.ThreadsMinuets,0,keyMachine);
+    if(TreadsProcess!=null){
+        cost+=TreadsProcess.Cost;
+    }
+    console.log("Unit price"+cost);
    return cost;
 }
 function CalculateLTMinuets(part){

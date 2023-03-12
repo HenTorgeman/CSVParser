@@ -90,7 +90,8 @@ const ReadInputFile = async (req, res, next) => {
                 MD:row[ColumnsInputFileByInput.MD],                
                 STR:false,
                 ComplexityLevel:row[ColumnsInputFileByInput.ComplexityLevel],
-                HolesTreads:row[ColumnsInputFileByInput.HolesTreads]
+                Threads:row[ColumnsInputFileByInput.Threads],
+                Holes:row[ColumnsInputFileByInput.Holes],
             });
 
             const boundingInfo=new Bounding({
@@ -140,9 +141,16 @@ const ReadInputFile = async (req, res, next) => {
             let str = CalculateByInputController.GetPartSTR(part);
             part.PartInfo.STR=str;
 
-
             const productionProcesses=await CalculateByInputController.CalculateProduction(part);
             if (productionProcesses != null) {
+                    const minutesPerHoleRoughing = await CalculateByInputController.GetMrrTimeMinutes(part.RawMaterial.Material,boundingInfo.VolumGroup,'HTRoughing');
+                    const minutesHolesRoughing=minutesPerHoleRoughing* part.PartInfo.Holes;
+                    part.HolesMinuets=minutesHolesRoughing;
+
+                    const minutesPerHoleFinishing = await CalculateByInputController.GetMrrTimeMinutes(part.RawMaterial.Material,boundingInfo.SurfaceGroup,'HTFinishing');
+                    const minutesHolesFinishing=minutesPerHoleFinishing*part.PartInfo.Threads;
+                    part.ThreadsMinuets=minutesHolesFinishing;
+
                     part.ProductionProcesses=productionProcesses;
                     part.Cost=await CalculateByInputController.CalculateCost(part);
                     part.LT=CalculateByInputController.CalculateLTMinuets(part);
@@ -547,7 +555,7 @@ const PrintFullData = async (req, res, next) => {
     const titles = []
     const data=[];
 
-    for(let i=1;i<47;i++){
+    for(let i=1;i<49;i++){
         let col1=ColumnsFullOutputFile[i.toString()];
         titles.push(col1);
     }   
@@ -606,7 +614,6 @@ const PrintFullData = async (req, res, next) => {
              MaximumDistance='NotCalculated';
              isInch='NotCalculated';
         }
-
 
         //Production
         let keyMachine=p.PartInfo.KeyMachine;
@@ -701,8 +708,10 @@ const PrintFullData = async (req, res, next) => {
         dataRow.push(surfaceGroup);
         dataRow.push(cm21min.toFixed(1));
         dataRow.push(finishingMin.toFixed(1)); //COL 19
-        dataRow.push('Not Calculated yet'); //
-        dataRow.push('Not Calculated yet'); //
+        dataRow.push(p.PartInfo.Holes); 
+        dataRow.push(p.PartInfo.Threads); 
+        dataRow.push(p.HolesMinuets); 
+        dataRow.push(p.ThreadsMinuets); //23
 
         dataRow.push(rows);
         dataRow.push(featNumber);

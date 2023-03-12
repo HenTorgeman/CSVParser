@@ -22,7 +22,10 @@ const PartInfoSchema = new mongoose.Schema({
     MD:{
         type: Number
     },
-    HolesTreads:{
+    Holes:{
+        type: Number
+    },  
+    Threads:{
         type: Number
     }
 });
