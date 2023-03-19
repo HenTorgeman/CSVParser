@@ -21,8 +21,6 @@ const CalculateProduction=async (part)=>{
         const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
         let roughingTime = mrrVolumCm/roughingTimePerCM;
 
-
-
         const process=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber,'3 Axis'):ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber,keyMachine);
         process.Index=processIndex;
         process.PN=part.PN;
@@ -37,6 +35,7 @@ const CalculateProduction=async (part)=>{
         processHolder.PN=part.PN;
         processIndex++;
         partProductionProcess.push(processHolder);
+        
         //# ProcessHolderRemove
         const holderRemovalSetUpNumber=isHolderRemoveSetUpNeeded==true?1:0;
         const processRemovalHolder=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,holderRemovalSetUpNumber,'3 Axis'):ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,holderRemovalSetUpNumber,keyMachine);
@@ -150,9 +149,6 @@ function GetPartProcessHolderSetUp(part){
     let value=false;
     let roughingSetUpsNumber=GetPartRoughingSetupsNumber(part);
 
-    if(part.PN=='10009823'){
-        console.log("BreakPoint");
-    }
     if(part.PartInfo.KeyMachine != '3 Axis'){
         if(roughingSetUpsNumber<=1){
             value=true;
@@ -306,6 +302,7 @@ function GetPartGrossVolume(L,W,H){
     let lGross=0;
     let wlGross=0;
     let hGross=0;
+
   if(size=='Small'){
          lGross=l+values.MaterialBuffer.Small;
          wlGross=w+values.MaterialBuffer.Small;
@@ -322,23 +319,6 @@ function GetPartGrossVolume(L,W,H){
         wlGross=w+values.MaterialBuffer.Large;
         hGross=h+values.MaterialBuffer.Large;
     }
-
-    
-    // if(size=='Small'){
-    //      lGross=l+((values.MaterialBuffer.Small/l)*100);
-    //      wlGross=w+((values.MaterialBuffer.Small/w)*100);
-    //      hGross=h+((values.MaterialBuffer.Small/h)*100);
-    // }
-    // if(size=='Medium'){
-    //      lGross=l+((values.MaterialBuffer.Medium/l)*100);
-    //      wlGross=w+((values.MaterialBuffer.Medium/w)*100);
-    //      hGross=h+((values.MaterialBuffer.Medium/h)*100);
-    // }
-    // if(size=='Large'){
-    //      lGross=l+((values.MaterialBuffer.Large/l)*100);
-    //      wlGross=w+((values.MaterialBuffer.Large/w)*100);
-    //      hGross=h+((values.MaterialBuffer.Large/h)*100);
-    // }
     
     let Val=lGross*wlGross*hGross;
     return Val;
@@ -358,7 +338,6 @@ function GetPartMaterialWeight(part){
     
     let materialWeight=(netWeighMM/values.UnitConvert.Mm3ToCm3) * part.RawMaterial.Density;
     return materialWeight;
-
 }
 async function CalculateCost(part){
    let cost=0;
@@ -398,7 +377,6 @@ async function CalculateCost(part){
     if(TreadsProcess!=null){
         cost+=TreadsProcess.Cost;
     }
-    console.log("Unit price"+cost);
    return cost;
 }
 function CalculateLTMinuets(part){
@@ -409,7 +387,7 @@ function CalculateLTMinuets(part){
     }
     return minuets;
 }
- function CalculateSetUpCost(part){
+function CalculateSetUpCost(part){
     let minutes=0;
     let cost=0;
 
@@ -429,22 +407,21 @@ function CalculateLTMinuets(part){
 }
 async function CalculateBatchLTDays(part){
     let strObj=await GetSurfaceTreatment(part.BoundingInfo.SurfaceTreatment);
-
     let strLTDay=strObj==null?0:strObj.LeadTime;
     let materialLTDays=part.RawMaterial.LT;
-    
     let strStandart=1;
-     let minuets=0;
+
+     let DaysSetUps=0;
      for(let i=0;i<part.ProductionProcesses.length;i++){
         let process=part.ProductionProcesses[i];
-        let val=process.ProcessesNumber*values.MinutesPerSetUp;
-        minuets+=val;
+        let val=process.ProcessesNumber;
+        DaysSetUps+=val;
    }
 
-     let hours=minuets/60;
-     let days=materialLTDays+strLTDay+strStandart+(hours/24);
+     let days=materialLTDays+strLTDay+strStandart+DaysSetUps;
      return days;
 }
+
 //#Pulling db data
 const GetSurfaceTreatment= async (treatment)=>{
     const docs =await CSurfaceTreatment.find({ Name:treatment}).exec();
@@ -468,7 +445,6 @@ const GetMrrTimeMinutes = async (material,size,processName)=>{
         else{
             if(docs.length==0){
                 let value =1;
-                console.log("#Error: Material notFound in CMRR table");
                 return value;
             }
         }
@@ -489,6 +465,7 @@ module.exports = {
     GetPartMrrNumber,
     GetPartMrrPrecentage,
     GetMrrTimeMinutes,
+    GetPartMaterialWeight,
     GetPartProcessRemoveHolderSetUp,
     CalcPartRoughingSetupTime,
     GetPartChargableWeight,

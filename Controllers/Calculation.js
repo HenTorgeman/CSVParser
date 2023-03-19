@@ -52,7 +52,6 @@ const CalculateProduction=async (part,keyProcesses)=>{
     }
 
     if(keyProcesses==null){
-        // console.log("keyProcesses is Null")
         return partProductionProcess;
 
     }
@@ -389,7 +388,6 @@ const GetSurfaceTreatment= async (treatment)=>{
 
 const GetMrrTimeMinutes = async (material,size,processName)=>{
     const docs =await CMrr.find({ Material:material,Size: size,ProcessName:processName}).exec();
-    
     if(docs.length>1) {
         console.log("#Error: Duplicate values in CMRR table");
         return null;
@@ -402,7 +400,6 @@ const GetMrrTimeMinutes = async (material,size,processName)=>{
         else{
             if(docs.length==0){
                 let value =1;
-                console.log("#Error: Material notFound in CMRR table");
                 return value;
             }
         }

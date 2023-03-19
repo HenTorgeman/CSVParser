@@ -15,8 +15,8 @@ const mongoDB = 'mongodb://127.0.0.1:27017/parserDB';
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-db.once("open", () => console.log("Connected to mongo"));
-app.listen(port, () => console.log(`Example app listening at http://${hostname}:${port}/`))
+db.once("open", () => console.log("## You are connected to mongooseDB....📡"));
+app.listen(port, () => console.log(`## The program listening at http://${hostname}:${port}/`))
 app.use("/FileAnalysis", FileAnalysis);
 app.use("/MachiningPart",MachiningPart);
 

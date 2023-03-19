@@ -21,7 +21,7 @@ var featIndex=0;
 const CalculatePartAccsesability=(part)=>
     new Promise(async resolve =>{
     const calculation = part.PartCalculation;
-    if(part.FilePath=='not valid file') resolve(null);
+    if(part.FilePath=='not valid path to file') resolve(null);
     else{
     let featursNumber=calculation.FeatursNumber;
     let partData=fs.readFileSync(part.FilePath, "utf8").split("\r\n");
@@ -148,7 +148,7 @@ const CalculateKeyMachineProcesses=(part)=>
     new Promise(async resolve =>{
 
      
-        if(part.FilePath=='not valid file') resolve(null);
+        if(part.FilePath=='not valid path to file') resolve(null);
         else{
             let partData =fs.readFileSync(part.FilePath, "utf8").split("\r\n");
             const circlesArr = await GetCirclesArr(partData, part.PN,part.BoundingInfo.MiddlePoint);
@@ -159,10 +159,7 @@ const CalculateKeyMachineProcesses=(part)=>
             SaveAll(directionArr);
             const AroundAxisArr = await GetAroundAxis(directionArr,part.PN);
             SaveAll(AroundAxisArr);
-            const partUnit = await GetStepUnit(part.BoundingInfo,partData);
-
-            if(partUnit==true) console.log("# Inch ! ");
-            
+            const partUnit = await GetStepUnit(part.BoundingInfo,partData);            
             let totalFeats=0;
             directionArr.map((d) =>totalFeats+=d.NumberOfFeat);
             let directionString=GetAsString(directionArr);
@@ -192,11 +189,7 @@ const CalculateKeyMachineProcesses=(part)=>
                 keyProcesses.push(process);
             }
         }
-        else{
-            // console.log("No Key machine procees option");
-        }
-
-
+    
         const Calculation= new PartCalculation({
             PN:part.PN,
             MD:directionArr.length,
@@ -814,53 +807,6 @@ new Promise(async resolve =>{
 
     //----------Reduce    
     resolve(filltered);
-});
-
-
-const ReduceDirections=(DirectionArr,pn)=>
-new Promise(async resolve =>{
-       
-    const AxisX=DirectionArr.filter((e)=>{if(e.AbsAxis=='X') return e;});
-    const AxisY=DirectionArr.filter((e)=>{if(e.AbsAxis=='Y') return e;});
-    const AxisZ=DirectionArr.filter((e)=>{if(e.AbsAxis=='Z') return e;});
-
-        if(AxisX.length>1){
-          
-          
-            const AxisXBlockedFeatsGroup1 =await Feat.find({ PN:pn,AxisB: 'X',IsPossibleAbsDirection:false}).exec();
-            const AxisXBlockedFeatsGroup2 =await Feat.find({ PN:pn,AxisB: '-X',IsPossibleAbsDirection:false}).exec();
-
-           if(AxisXBlockedFeatsGroup1.length>1 && AxisXBlockedFeatsGroup2.length>1){
-            // console.log("Axis X is blocked");
-           }
-           else{
-
-            // console.log("Can Remove X direction")
-
-            }
-        }
-        if(AxisY.length>1){
-              const AxisXBlockedFeatsGroup1 =await Feat.find({ PN:pn,AxisB: 'Y',IsPossibleAbsDirection:false}).exec();
-            const AxisXBlockedFeatsGroup2 =await Feat.find({ PN:pn,AxisB: '-Y',IsPossibleAbsDirection:false}).exec();
-
-            if(AxisXBlockedFeatsGroup1.length>1 && AxisXBlockedFeatsGroup2.length>1){
-            //  console.log("Axis Y is blocked");
-            }
-            else{
-          }
-        }
-
-         if(AxisZ.length>1){
-            const AxisXBlockedFeatsGroup1 =await Feat.find({ PN:pn,AxisB: 'Z',IsPossibleAbsDirection:false}).exec();
-            const AxisXBlockedFeatsGroup2 =await Feat.find({ PN:pn,AxisB: '-Z',IsPossibleAbsDirection:false}).exec();
-            if(AxisXBlockedFeatsGroup1.length>1 && AxisXBlockedFeatsGroup2.length>1){
-            //  console.log("Axis Z is blocked");
-            }
-            else{
-             console.log("Can Remove Z direction")
-         }
-        }
-        resolve(null);
 });
 
 //(06)
@@ -1553,7 +1499,6 @@ module.exports = {
     GetFeatArr,
     GetDirectionsArr,
     GetMSPart,
-    ReduceDirections,
     CalculateAroundAxisNumber,
     CalculateKeyMachineOptions,
     CalculateKeyProductionProcesses,
