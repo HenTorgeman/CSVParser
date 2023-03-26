@@ -45,7 +45,8 @@ const CalculateProduction=async (part)=>{
         processIndex++;
 
         //# Finishing
-        let surfaceGroup= GetPartSurfaceGroup(part.BoundingInfo.Surface/values.UnitConvert.Mm2ToCm2);
+        // let surfaceGroup=GetPartSurfaceGroup(part.BoundingInfo.Surface/values.UnitConvert.Mm2ToCm2);
+        let surfaceGroup=GetPartSurfaceGroup(part.BoundingInfo.Surface);
         const finishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,surfaceGroup,'Finishing');
         // const semifinishingSetupTimePerCM = await GetMrrTimeMinutes(part.RawMaterial.Material,surfaceGroup,'Semi-finishing');
 
@@ -344,6 +345,7 @@ async function CalculateCost(part){
     let l=part.BoundingInfo.L;
     let w=part.BoundingInfo.W;
     let h=part.BoundingInfo.H;
+
     // # SurfaceTreatment
     let strObj=await GetSurfaceTreatment(part.BoundingInfo.SurfaceTreatment);
     if(strObj!=null){

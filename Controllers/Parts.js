@@ -158,25 +158,24 @@ const ReadInputFile = async (req, res, next) => {
                     part.BatchTime=await CalculateByInputController.CalculateBatchLTDays(part);
                     part.BatchCost=CalculateByInputController.CalculateSetUpCost(part);
 
-                    let rughingTime=0;
-                    let finishingTime=0;
+                    let roughingProcessesList= productionProcesses.filter(pro=>{
+                        if(pro.ProcessName=='Roughing') return pro;
+                    });
+                    let holderProceesesList= productionProcesses.filter(pro=>{
+                        if(pro.ProcessName=='Holder') return pro;
+                    });
+              
+                    let finishingProcessesList= productionProcesses.filter(pro=>{
+                        if(pro.ProcessName=='Finishing') return pro;
+                    });
 
-                    for(let i=0;i<productionProcesses.length;i++){
-                        let proc=productionProcesses[i];
-                        if(proc.ProcessName=='Roughing'){
-                            rughingTime+=proc.Time;   
-                        } 
-                        if(proc.ProcessName=='Holder'){
-                            if(proc.ProcessesNumber>0){
-                                rughingTime+=proc.Time;   
-                            }               
+                    let rughingTime=roughingProcessesList[0].Time;
+                    let finishingTime=finishingProcessesList[0].Time;
+                    holderProceesesList.forEach(p=>{
+                        if(p.ProcessesNumber>0){
+                            rughingTime+=p.Time;
                         }
-                        else{
-                            if(proc.Type=='Key'){
-                                finishingTime+=proc.Time;
-                            }
-                        }
-                    }
+                    });
 
                     part.RoughingMinuets=rughingTime;
                     part.FinishingMinuets=finishingTime;
@@ -580,8 +579,8 @@ const PrintFullData = async (req, res, next) => {
         let volumeGroup=p.BoundingInfo.VolumGroup;
         let surface=p.BoundingInfo.Surface;
         let surfaceGroup=p.BoundingInfo.SurfaceGroup;
+
       
-        let finishingMin=p.FinishingMinuets;
         const cm31min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.VolumGroup,'Roughing');
         const cm21min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.SurfaceGroup,'Finishing');
 
@@ -620,21 +619,6 @@ const PrintFullData = async (req, res, next) => {
         //Production
         let keyMachine=p.PartInfo.KeyMachine;
         let isStr=p.PartInfo.STR;
-        let keyProcessNumber=0;
-        let additionlProcessNumber=0;
-
-        p.ProductionProcesses.map((p)=>{
-            if(p.Type=='Key'){
-                keyProcessNumber+= p.ProcessesNumber;
-            }
-        });
-        p.ProductionProcesses.map((p)=>{
-            if(p.Type=='Additional'){
-                additionlProcessNumber+= p.ProcessesNumber;
-            }
-        });
-        let keyMachineProcessNumber=keyProcessNumber;
-        let AdditionalProcess=additionlProcessNumber;
         let MachiningDirections=p.PartInfo.MD;
         let AroundAxis=p.PartInfo.AroundAxis;
         let MDSecondaeyAxis="Not calculated";
@@ -642,26 +626,36 @@ const PrintFullData = async (req, res, next) => {
         let SetupCost=p.BatchCost;
         let UnitLeadTimeHours=(p.LT/60);
         let BatchLeadTimeDays=p.BatchTime;
+        const productionProcesses=p.ProductionProcesses;
 
         // # Roughing | Finishing
-        let roughing=null;
-        p.ProductionProcesses.map((p)=>{
-            if(p.ProcessName=='Roughing'){
-                roughing=p;
-            }
+
+        let roughingProcessesList= productionProcesses.filter(pro=>{
+            if(pro.ProcessName=='Roughing') return pro;
         });
-        let finishing=null;
-         p.ProductionProcesses.map((p)=>{
-            if(p.ProcessName=='Finishing'){
-                finishing=p;
-            }
+        let holderProceesesList= productionProcesses.filter(pro=>{
+            if(pro.ProcessName=='Holder') return pro;
+        });
+        let finishingProcessesList= productionProcesses.filter(pro=>{
+            if(pro.ProcessName=='Finishing') return pro;
         });
 
-        let roughingMin=0;
-        roughingMin=roughing.Time;
+        let roughing=roughingProcessesList[0];
+        let roughingMin=roughing.Time;
+        let roughingCost=roughing.Cost;
+        let additionalProcess=roughing.ProcessesNumber;
+        holderProceesesList.map(p=>{
+            additionalProcess+=p.ProcessesNumber;
+        });
 
-        let RoughingCost=roughing.Cost;
-        let FinishingCost=finishing.Cost;
+        let finishing=finishingProcessesList[0];
+        let finishingMin=finishing.Time;
+        let finishingCost=finishing.Cost;
+        keyProcessNumber=finishing.ProcessesNumber;
+       
+        let keyMachineProcessNumber=keyProcessNumber;
+
+
         let surfaceTreatmentCost=0;
         let surfaceTreatmentLT=0;
         let materialCost=0;
@@ -704,7 +698,7 @@ const PrintFullData = async (req, res, next) => {
         dataRow.push(surface.toFixed(1));
         dataRow.push(surfaceGroup);
         dataRow.push(cm21min.toFixed(1));
-        dataRow.push(finishingMin.toFixed(1)); //COL 19
+        dataRow.push(finishingMin); 
         dataRow.push(p.PartInfo.Holes); 
         dataRow.push(p.PartInfo.Threads); 
         dataRow.push(p.HolesMinuets); 
@@ -719,8 +713,8 @@ const PrintFullData = async (req, res, next) => {
         dataRow.push(abNormalDirections);
         dataRow.push(isInch);
 
-        dataRow.push(FinishingCost);
-        dataRow.push(RoughingCost);
+        dataRow.push(finishingCost);
+        dataRow.push(roughingCost);
         dataRow.push(materialCost);
         dataRow.push(materialLT);
         dataRow.push(surfaceTreatmentCost);
@@ -730,7 +724,7 @@ const PrintFullData = async (req, res, next) => {
         dataRow.push(MachiningDirections);
         dataRow.push(AroundAxis);
         dataRow.push(MDSecondaeyAxis);
-        dataRow.push(AdditionalProcess);
+        dataRow.push(additionalProcess);
 
         dataRow.push(keyMachine);
         dataRow.push(keyMachineProcessNumber);
