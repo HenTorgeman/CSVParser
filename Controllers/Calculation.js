@@ -337,7 +337,11 @@ async function CalculateCost(part){
 
     for(let i=0;i<part.ProductionProcesses.length;i++){
         let process=part.ProductionProcesses[i];
-        cost+=process.Cost;
+        //Need to confirm condition
+        
+        if(process.ProcessName!="Holder"){
+            cost+=process.Cost;
+        }
    }
    return cost;
 }

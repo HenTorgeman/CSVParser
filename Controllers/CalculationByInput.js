@@ -3,8 +3,6 @@ const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
 const ProcessController = require("./ProductionProcesses");
 const values = require("../Files/SavedValues.json");
 const { off } = require("../Model/Part");
-
-
 const CalculateProduction=async (part)=>{
 
         const partProductionProcess=[];

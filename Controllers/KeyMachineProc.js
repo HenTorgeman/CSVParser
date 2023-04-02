@@ -585,12 +585,12 @@ const GetCirclesArr=(tableFile,pn,middlePoint)=>
     var dictionary =[];
 
     let filteredArr=tableFile.filter(e=>{
-        let r=e.split(" ");
-        return r[2]==="CIRCLE";
+        return e.includes("CIRCLE");
+        
     });
 
     for(el of filteredArr){        
-        var row = el.split(" ");
+        var row = el.split(",");
         const response= await CreateCircel(row, tableFile, pn,middlePoint);
             if (response != null) {
                    var key=GetUniqKeyForCircle(response);
@@ -952,129 +952,84 @@ new Promise(async resolve =>{
 //(01-1)
 const CreateCircel=(rowArr,fileArr,pn,middlePoint)=>
     new Promise(resolve=>{
-    
-        if (rowArr[2] === "CIRCLE") {
-            var indexText = rowArr[0];
+
+            rowArr.map(e=>{
+                e=e.toString().replace(/[^\w\s]/gi, '');
+            });
+
+            var initial = rowArr[0].split('=');
+            var indexText=initial[0];
             var index = indexText.toString().replace(/[^\w\s]/gi, '');
-            var radius = rowArr[6];
-            var name = rowArr[2];
-            var axisIndex = 0;
+            var radius =rowArr[2].split(')')[0];
+            var axisIndex = rowArr[1];
             const Arr = [];
 
             var circel = Circel({
                 index: index,
                 indexText: indexText,
-                actionName: name.toString().replace(/[^\w\s]/gi, ''),
-                Radius: parseFloat(radius).toFixed(2),
+                actionName: "CIRCLE",
+                Radius: Number(radius),
             });
 
-            //get the direction AXIS2_PLACEMENT_3D
-            for (let i = 0; i < rowArr.length; i++) {
-                if (rowArr[i].includes("#")) {
-                    if (rowArr[i] != indexText) {
-                        circel.relatedActionIndex.push(rowArr[i]);
-                        axisIndex = rowArr[i].toString().replace(/[^\w\s]/gi, '');
-                    }
-                }
-            }
-
-            //get 1 CARTESIAN_POINT and 2 DIRECTIONS
             fileUtilit.GetRow(fileArr, axisIndex, (dataAxis) => {
                 if (dataAxis != null) {
-                    var cp1 = dataAxis[5].toString().replace(/[^\w\s]/gi, '');
-                    var cp2 = dataAxis[6].toString().replace(/[^\w\s]/gi, '');
-                    var cp3 = dataAxis[7].toString().replace(/[^\w\s]/gi, '');
+                    fileUtilit.GetPointActions(fileArr, dataAxis, (PointActions) => {
 
-                    fileUtilit.GetRow(fileArr, cp1, (dataA) => {
-                        if (dataA != null) {
-                            let pointRowArr = dataA;
-                            let indexText = pointRowArr[0];
-                            let index = pointRowArr[0].toString().replace(/[^\w\s]/gi, '');
-                            let name = pointRowArr[2];
+                    var cp1 = PointActions[0];
+                    var cp2 = PointActions[1];
+                    var cp3 = PointActions[2];
 
-                            if (name == "CARTESIAN_POINT" || name == "DIRECTION") {
-                                let x = parseFloat(pointRowArr[7]);
-                                let y = parseFloat(pointRowArr[8]);
-                                let z = parseFloat(pointRowArr[9]);
-                                const pointA = Point({
-                                    index: index,
-                                    indexText: indexText,
-                                    actionName: name,
-                                    x: parseFloat(x).toFixed(3),
-                                    y: parseFloat(y).toFixed(3),
-                                    z: parseFloat(z).toFixed(3),
+                    fileUtilit.GetPointValues(fileArr, cp1, (pointDataA) => {
+                                let x = pointDataA.x;
+                                let y = pointDataA.y;
+                                let z = pointDataA.z;
+
+                                const pointA = Point({                              
+                                    x: Number(x).toFixed(3),
+                                    y: Number(y).toFixed(3),
+                                    z: Number(z).toFixed(3),
                                 });
                                 circel.A = pointA;
                                 Arr.push(pointA);
-                            }
-                            fileUtilit.GetRow(fileArr, cp2, (dataB) => {
-                                if (dataB != null) {
-                                    let pointRowArr = dataB;
-                                    let indexText = pointRowArr[0];
-                                    let index = pointRowArr[0].toString().replace(/[^\w\s]/gi, '');
-                                    let name = pointRowArr[2];
 
-                                    if (name == "CARTESIAN_POINT" || name == "DIRECTION") {
-                                        let x = parseFloat(pointRowArr[7]);
-                                        let y = parseFloat(pointRowArr[8]);
-                                        let z = parseFloat(pointRowArr[9]);
-                                        const pointB = Point({
-                                            index: index,
-                                            indexText: indexText,
-                                            actionName: name,
-                                            x: parseFloat(x).toFixed(3),
-                                            y: parseFloat(y).toFixed(3),
-                                            z: parseFloat(z).toFixed(3),
-                                        });
-
+                            fileUtilit.GetPointValues(fileArr, cp2, (pointBdata) => {
+                                        let x = pointBdata.x;
+                                        let y = pointBdata.y;
+                                        let z = pointBdata.z;
+        
+                                    const pointB = Point({                              
+                                        x: Number(x).toFixed(3),
+                                        y: Number(y).toFixed(3),
+                                        z: Number(z).toFixed(3),
+                                    });
                                         circel.B = pointB;
                                         Arr.push(pointB);
 
-
-                                    }
-
-                                    fileUtilit.GetRow(fileArr, cp3, (dataC) => {
-                                        if (dataC != null) {
-                                            let pointRowArr = dataC;
-                                            let indexText = pointRowArr[0];
-                                            let index = pointRowArr[0].toString().replace(/[^\w\s]/gi, '');
-                                            let name = pointRowArr[2];
-
-                                            if (name == "CARTESIAN_POINT" || name == "DIRECTION") {
-                                                let x = parseFloat(pointRowArr[7]);
-                                                let y = parseFloat(pointRowArr[8]);
-                                                let z = parseFloat(pointRowArr[9]);
-                                                const pointC = Point({
-                                                    index: index,
-                                                    indexText: indexText,
-                                                    actionName: name,
-                                                    x: parseFloat(x).toFixed(3),
-                                                    y: parseFloat(y).toFixed(3),
-                                                    z: parseFloat(z).toFixed(3),
-                                                });
+                                        fileUtilit.GetPointValues(fileArr, cp3, (pointCdata) => {
+                                                let x = pointCdata.x;
+                                                let y = pointCdata.y;
+                                                let z = pointCdata.z;
+                
+                                            const pointC = Point({                              
+                                                x: Number(x).toFixed(3),
+                                                y: Number(y).toFixed(3),
+                                                z: Number(z).toFixed(3),
+                                            });
                                                 circel.C = pointC;
                                                 Arr.push(pointC);
                                                 
                                                 circel.PN=pn;
                                                 circel.AxisB = GetCircelAxisB(circel,middlePoint);
-                                                circel.AbsulteAxisB = GetGenCircelAxisB(circel);
-                                                // circel.AxisC = GetCircelAxisC(circel);
-                                                // circel.AbsulteAxisC = GetGenCircelAxisC(circel);
+                                                circel.AbsulteAxisB = GetGenCircelAxisB(circel);                                    
                                                 circel.IsComplex=IsComolexCircle(circel);
+                                                resolve(circel)
+                                         });
+                                    });                    
+                               });
+                        });
+                    }
+                });
 
-                                            }
-                                            resolve(circel);
-
-                                        }
-                                    });
-                                }
-                            });
-
-                        }
-                    });
-                }
-            });
-        }
         resolve(null)
 });
 

@@ -38,7 +38,7 @@ const PartAcssesability = require("../Model/PartAcssesability");
 const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CRawMaterial.csv';
 const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CMRR.csv';
 const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/SurfaceTreatment.csv';
-const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/InputMD.csv';
+const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/InputMDNotBugs.csv';
 
 const  OutputPath= '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/ODashboard.csv';
 const MrrOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/OMRRDashboard.csv';
@@ -62,7 +62,6 @@ const ReadInputFile = async (req, res, next) => {
         let row=el.split(",");
         let p=row[ColumnsInputFileByInput.PN];
         let index=row[ColumnsInputFileByInput.Index];
-        // if(p!="Part Number" && p!="" && p!="RowID"){
         if(genIndex>0){
             console.log("part : "+p+"...."+index+" / "+partsCount);
             let filePathValid="not valid path to file";
