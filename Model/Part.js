@@ -29,32 +29,10 @@ const PartSchema = new mongoose.Schema({
     RawMaterial:{
         type:Object
     },
-    HolesMinuets:{
-        type:Number
-    },
-    ThreadsMinuets:{
-        type:Number
-    },
-    RoughingMinuets:{
-        type:Number
-    },
-    RoughingMinuets:{
-        type:Number
-    },
-    FinishingMinuets:{
-        type:Number
-    },
-    Cost:{
-        type:Number
-    },
-    LT:{
-        type:Number
-    },
-    BatchTime:{
-        type:Number
-    },
-    BatchCost:{
-        type:Number
-    },
+    PartResults:{
+        type:Object
+
+    }
+  
 });
 module.exports = mongoose.model("Part", PartSchema);

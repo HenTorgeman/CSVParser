@@ -38,7 +38,7 @@ const PartAcssesability = require("../Model/PartAcssesability");
 const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CRawMaterial.csv';
 const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CMRR.csv';
 const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/SurfaceTreatment.csv';
-const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/InputMDNotBugs.csv';
+const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/InputMD.csv';
 
 const  OutputPath= '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/ODashboard.csv';
 const MrrOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/OMRRDashboard.csv';
@@ -50,7 +50,6 @@ const TimesOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Opt
 
 //Files
 const ReadInputFile = async (req, res, next) => {
-
     ConsoleStart();
     let table =fs.readFileSync(inputFile, "utf8").split("\r\n");
     const arr=[];
@@ -124,64 +123,21 @@ const ReadInputFile = async (req, res, next) => {
 
             //Added for Accsesability.
             const Calculation=await FileAnalysis.CalculateKeyMachineProcesses(part);
-            if(Calculation!=null){
-                part.PartCalculation=Calculation;
-                const Acssesability=await FileAnalysis.CalculatePartAccsesability(part);
-                if(Acssesability!=null)
-                    part.PartAcssesability=Acssesability;
-                else {
-                    part.PartAcssesability=null;
-                }
-            }
-            else{
-                part.PartCalculation=null;
-
-            }
+            part.PartCalculation=Calculation!=null?Calculation:null;
+        
+            const Acssesability=await FileAnalysis.CalculatePartAccsesability(part);
+            part.PartAcssesability=Acssesability!=null?Acssesability:null;
            
             let str = CalculateByInputController.GetPartSTR(part);
             part.PartInfo.STR=str;
 
-            const productionProcesses=await CalculateByInputController.CalculateProduction(part);
+            const productionProcesses=await CalculateByInputController.CalculateProductionProcesses(part);
             if (productionProcesses != null) {
-                    const minutesPerHoleRoughing = await CalculateByInputController.GetMrrTimeMinutes(part.RawMaterial.Material,boundingInfo.VolumGroup,'HTRoughing');
-                    const minutesHolesRoughing=minutesPerHoleRoughing* part.PartInfo.Holes;
-                    part.HolesMinuets=minutesHolesRoughing;
-
-                    const minutesPerHoleFinishing = await CalculateByInputController.GetMrrTimeMinutes(part.RawMaterial.Material,boundingInfo.SurfaceGroup,'HTFinishing');
-                    const minutesHolesFinishing=minutesPerHoleFinishing*part.PartInfo.Threads;
-                    part.ThreadsMinuets=minutesHolesFinishing;
-
-                    part.ProductionProcesses=productionProcesses;
-                    part.Cost=await CalculateByInputController.CalculateCost(part);
-                    part.LT=CalculateByInputController.CalculateLTMinuets(part);
-                    part.BatchTime=await CalculateByInputController.CalculateBatchLTDays(part);
-                    part.BatchCost=CalculateByInputController.CalculateSetUpCost(part);
-
-                    let roughingProcessesList= productionProcesses.filter(pro=>{
-                        if(pro.ProcessName=='Roughing') return pro;
-                    });
-                    let holderProceesesList= productionProcesses.filter(pro=>{
-                        if(pro.ProcessName=='Holder') return pro;
-                    });
-              
-                    let finishingProcessesList= productionProcesses.filter(pro=>{
-                        if(pro.ProcessName=='Finishing') return pro;
-                    });
-
-                    let rughingTime=roughingProcessesList[0].Time;
-                    let finishingTime=finishingProcessesList[0].Time;
-                    holderProceesesList.forEach(p=>{
-                        if(p.ProcessesNumber>0){
-                            rughingTime+=p.Time;
-                        }
-                    });
-
-                    part.RoughingMinuets=rughingTime;
-                    part.FinishingMinuets=finishingTime;
-
-                    arr.push(part);
+                part.ProductionProcesses=productionProcesses;
+                const partResults=await CalculateByInputController.CalculatePartResults(part);
+                part.PartResults=partResults;
+                arr.push(part);
             }
-
         }
         genIndex++;
     }
@@ -491,6 +447,17 @@ const PrintMrrDashboard = async (req, res, next) => {
     titles.push("Surface group");
     titles.push("CM2 In 1Min");
     titles.push("Finishing Minuets");
+    titles.push("Featurs Number (Script)");
+    titles.push("Featurs Number (CT)");
+    titles.push("Step Rows Count");
+    titles.push("Maximum Radius");
+    titles.push("Minimum Radius");
+    titles.push("Ab Normal Directions Number");
+    titles.push("Maximum Distance Between Featurs");
+    titles.push("Minimum Distance Between Featurs");
+    titles.push("MD (Script)");
+
+
 
     const parts =await Part.find({}).exec();
     data.push(titles);
@@ -536,7 +503,16 @@ const PrintMrrDashboard = async (req, res, next) => {
         dataRow.push(surfaceGroup);
         dataRow.push(cm21min);
         dataRow.push(finishingMin);
+        dataRow.push(p.PartAcssesability.FeatursNumber);
+        dataRow.push(dataRow);
+        dataRow.push(p.PartAcssesability.StepRowsCount);
+        dataRow.push(p.PartAcssesability.MaximumCircleRadius);
+        dataRow.push(p.PartAcssesability.MinimumCircleRadius);
+        dataRow.push(p.PartAcssesability.AbNormalDirectionsNumber);
+        dataRow.push(p.PartAcssesability.MaximumDistanceBetweenCircles);
+        dataRow.push(p.PartCalculation.MD);
         data.push(dataRow);
+   
     }
 
     const csvData = data.map(d => d.join(',')).join('\n');
@@ -579,7 +555,6 @@ const PrintFullData = async (req, res, next) => {
         let surface=p.BoundingInfo.Surface;
         let surfaceGroup=p.BoundingInfo.SurfaceGroup;
 
-      
         const cm31min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.VolumGroup,'Roughing');
         const cm21min = await PartCalculationController.GetMrrTimeMinutes(p.RawMaterial.Material,p.BoundingInfo.SurfaceGroup,'Finishing');
 
@@ -745,7 +720,7 @@ const PrintFullData = async (req, res, next) => {
         }
     });
       
-    res.status(200).send(data);
+    res.status(200).send(OutputFullData);
 }  
 const PrintAccsesabilityDashboard = async (req, res, next) => {
 

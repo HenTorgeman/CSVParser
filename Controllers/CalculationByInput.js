@@ -1,9 +1,12 @@
 const CMrr = require("../Model/CMrr");
+const PartResults = require("../Model/PartResults");
+
 const CSurfaceTreatment = require("../Model/CSurfaceTreatment");
 const ProcessController = require("./ProductionProcesses");
 const values = require("../Files/SavedValues.json");
-const { off } = require("../Model/Part");
-const CalculateProduction=async (part)=>{
+// const { off } = require("../Model/Part");
+
+const CalculateProductionProcesses=async (part)=>{
 
         const partProductionProcess=[];
         let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
@@ -19,7 +22,7 @@ const CalculateProduction=async (part)=>{
         const mrrVolumCm=(mrrVolum/values.UnitConvert.Mm3ToCm3)
         let roughingTime = mrrVolumCm/roughingTimePerCM;
 
-        const process=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber,'3 Axis'):ProcessController.CreateRoughingProcess('Roughing',roughingTime,roughingSetupNumber,keyMachine);
+        const process=roughingSetupNumber>0?ProcessController.CreateAdditionalProcess('Roughing',roughingTime,roughingSetupNumber,'3 Axis'):ProcessController.CreateAdditionalProcess('Roughing',roughingTime,roughingSetupNumber,keyMachine);
         process.Index=processIndex;
         process.PN=part.PN;
         partProductionProcess.push(process);
@@ -28,7 +31,7 @@ const CalculateProduction=async (part)=>{
         //# ProcessHolder
         const holderTimePerPart = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'Holder');
         const holderSetUpNumber=isHolderSetupNeeded==true?1:0;
-        const processHolder=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,holderSetUpNumber,'3 Axis'):ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,holderSetUpNumber,keyMachine);
+        const processHolder=roughingSetupNumber>0?ProcessController.CreateAdditionalProcess('Holder',holderTimePerPart,holderSetUpNumber,'3 Axis'):ProcessController.CreateAdditionalProcess('Holder',holderTimePerPart,holderSetUpNumber,keyMachine);
         processHolder.Index=processIndex;
         processHolder.PN=part.PN;
         processIndex++;
@@ -36,11 +39,26 @@ const CalculateProduction=async (part)=>{
         
         //# ProcessHolderRemove
         const holderRemovalSetUpNumber=isHolderRemoveSetUpNeeded==true?1:0;
-        const processRemovalHolder=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,holderRemovalSetUpNumber,'3 Axis'):ProcessController.CreateRoughingProcess('Holder',holderTimePerPart,holderRemovalSetUpNumber,keyMachine);
+        const processRemovalHolder=roughingSetupNumber>0?ProcessController.CreateAdditionalProcess('Holder',holderTimePerPart,holderRemovalSetUpNumber,'3 Axis'):ProcessController.CreateAdditionalProcess('Holder',holderTimePerPart,holderRemovalSetUpNumber,keyMachine);
         processRemovalHolder.Index=processIndex;
         processRemovalHolder.PN=part.PN;
         partProductionProcess.push(processRemovalHolder);
         processIndex++;
+
+
+        //# Holes & Treads
+        // # Calculate Holes Minutes
+        const minutesPerHoleRoughing = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.VolumGroup,'HTRoughing');
+        const holesTime=minutesPerHoleRoughing* part.PartInfo.Holes;
+        // # Calculate Treahds Minutes
+        const minutesPerHoleFinishing = await GetMrrTimeMinutes(part.RawMaterial.Material,part.BoundingInfo.SurfaceGroup,'HTFinishing');
+        const threadsTime=minutesPerHoleFinishing*part.PartInfo.Threads;
+        
+        const HolesProcess=roughingSetupNumber>0?ProcessController.CreateAdditionalProcess('Holes',holesTime,0,'3 Axis'):ProcessController.CreateAdditionalProcess('Holes',holesTime,0,keyMachine);
+        const TreadsProcess=ProcessController.CreateAdditionalProcess('Threads',threadsTime,0,keyMachine);
+        
+        partProductionProcess.push(HolesProcess);
+        partProductionProcess.push(TreadsProcess);
 
         //# Finishing
         // let surfaceGroup=GetPartSurfaceGroup(part.BoundingInfo.Surface/values.UnitConvert.Mm2ToCm2);
@@ -52,7 +70,6 @@ const CalculateProduction=async (part)=>{
         const surfaceCm=(surface/values.UnitConvert.Mm2ToCm2);
         // const finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM)+(surfaceCm/semifinishingSetupTimePerCM);
         let finishingTimeMinutes=(surfaceCm/finishingSetupTimePerCM);
-
 
         //# In script Version : will be based on around axis and around axis secondary.
                 if(keyMachine=='4 Axis'){
@@ -75,6 +92,74 @@ const CalculateProduction=async (part)=>{
                 }
 
     return partProductionProcess;
+}
+const CalculatePartResults=async (part)=>{
+
+    const productionProcesses=part.ProductionProcesses;
+    // # Pull Part's Data
+    let roughingProcessesList= productionProcesses.filter(pro=>{
+        if(pro.ProcessName=='Roughing') return pro;
+    });
+    let holderProceesesList=productionProcesses.filter(pro=>{
+        if(pro.ProcessName=='Holder' && pro.ProcessesNumber>0) return pro;
+    });
+    let finishingProcessesList= productionProcesses.filter(pro=>{
+        if(pro.ProcessName=='Finishing') return pro;
+    });
+    let holesProcessesList= productionProcesses.filter(pro=>{
+        if(pro.ProcessName=='Holes') return pro;
+    });
+    let threadsProcessesList= productionProcesses.filter(pro=>{
+        if(pro.ProcessName=='Threads') return pro;
+    });
+
+        let rughingTime=roughingProcessesList[0].Time;
+        let rughingCost=roughingProcessesList[0].Cost;
+ 
+
+    let finishingTime=finishingProcessesList[0].Time;
+    let finishingCost=finishingProcessesList[0].Cost;
+   
+    let holesTime=holesProcessesList[0].Time;
+    let holesCost=holesProcessesList[0].Cost;
+   
+    let threadsTime=threadsProcessesList[0].Time;
+    let threadsCost=threadsProcessesList[0].Cost;
+
+    let holderTime=0;
+    let holderCost=0;
+    if(holderProceesesList.length>0){holderProceesesList.map(p=>{holderTime+=p.Time;holderCost+=p.Cost;})}
+    holderProceesesList.forEach(p=>{
+        if(p.ProcessesNumber>0){
+            holderTime+=p.Time;
+            holderCost+=p.Cost;
+        }
+    });
+
+    const partResult=new PartResults({
+        PN:part.PN,
+        HolesMinuets:holesTime,
+        HolesCost:holesCost,
+        ThreadsMinuets:threadsTime,
+        ThreadsCost:threadsCost,
+        RoughingMinuets:rughingTime,
+        RoughingCost:rughingCost,
+        FinishingMinuets:finishingTime,
+        FinishingCost:finishingCost,
+        HoldersMinuets:holderTime,
+        HoldersCost:holderCost,
+        Cost:0,
+        LT:0,
+        BatchTime:0,
+        BatchCost:0,
+    });
+
+    // part.Cost=await CalculateByInputController.CalculateCost(part);
+    // part.LT=CalculateByInputController.CalculateLTMinuets(part);
+    // part.BatchTime=await CalculateByInputController.CalculateBatchLTDays(part);
+    // part.BatchCost=CalculateByInputController.CalculateSetUpCost(part);
+
+    return partResult;
 }
 function GetPartSTR(part){
 
@@ -338,6 +423,7 @@ function GetPartMaterialWeight(part){
     let materialWeight=(netWeighMM/values.UnitConvert.Mm3ToCm3) * part.RawMaterial.Density;
     return materialWeight;
 }
+
 async function CalculateCost(part){
    let cost=0;
     let l=part.BoundingInfo.L;
@@ -346,6 +432,7 @@ async function CalculateCost(part){
 
     // # SurfaceTreatment
     let strObj=await GetSurfaceTreatment(part.BoundingInfo.SurfaceTreatment);
+
     if(strObj!=null){
         let GrossSurface=2*((l*w)+(w*h)+(h*l));
         let surfaceDM=GrossSurface/values.UnitConvert.Dm2ToMm2;
@@ -360,23 +447,35 @@ async function CalculateCost(part){
     // # Material Price
     let materialCost=GetPartMaterialWeight(part)*part.RawMaterial.PricePerKg;
     cost+=materialCost;
+
     
-    for(let i=0;i<part.ProductionProcesses.length;i++){
-        let process=part.ProductionProcesses[i];
-        cost+=process.Cost;
-    }
+    part.RoughingMinuets=rughingTime;
+    part.FinishingMinuets=finishingTime;
+    part.holdersTime=holdersTime;
+    part.ThreadsMinuets=minutesHolesFinishing;
+    part.ProductionProcesses=productionProcesses;
+    part.HolesMinuets=minutesHolesRoughing;
 
-    let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
-    let keyMachine=part.PartInfo.KeyMachine;
+    
+    // // for(let i=0;i<part.ProductionProcesses.length;i++){
+    // //     //Need to check
+    // //     if(process.processName!='Holder'){
+    // //         let process=part.ProductionProcesses[i];
+    // //         cost+=process.Cost;
+    // //     }
+    // // }
 
-    const HolesProcess=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Roughing',part.HolesMinuets,0,'3 Axis'):ProcessController.CreateRoughingProcess('Roughing',part.HolesMinuets,0,keyMachine);
-    if(HolesProcess!=null){
-        cost+=HolesProcess.Cost;
-    }
-    const TreadsProcess=roughingSetupNumber>0?ProcessController.CreateRoughingProcess('Roughing',part.ThreadsMinuets,0,'3 Axis'):ProcessController.CreateRoughingProcess('Roughing',part.ThreadsMinuets,0,keyMachine);
-    if(TreadsProcess!=null){
-        cost+=TreadsProcess.Cost;
-    }
+    // let roughingSetupNumber=GetPartRoughingSetupsNumber(part);
+    // let keyMachine=part.PartInfo.KeyMachine;
+
+    // const HolesProcess=roughingSetupNumber>0?ProcessController.CreateAdditionalProcess('Roughing',part.HolesMinuets,0,'3 Axis'):ProcessController.CreateAdditionalProcess('Roughing',part.HolesMinuets,0,keyMachine);
+    // if(HolesProcess!=null){
+    //     cost+=HolesProcess.Cost;
+    // }
+    // const TreadsProcess=roughingSetupNumber>0?ProcessController.CreateAdditionalProcess('Roughing',part.ThreadsMinuets,0,'3 Axis'):ProcessController.CreateAdditionalProcess('Roughing',part.ThreadsMinuets,0,keyMachine);
+    // if(TreadsProcess!=null){
+    //     cost+=TreadsProcess.Cost;
+    // }
    return cost;
 }
 function CalculateLTMinuets(part){
@@ -461,7 +560,8 @@ module.exports = {
     GetPartGrossVolume,
     GetPartSTR,
     GetPartRoughingSetupsNumber,
-    CalculateProduction,
+    CalculateProductionProcesses,
+    CalculatePartResults,
     GetPartMrrNumber,
     GetPartMrrPrecentage,
     GetMrrTimeMinutes,

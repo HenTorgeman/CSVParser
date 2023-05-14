@@ -3,10 +3,9 @@ const CMrr = require("../Model/CMrr");
 const ProductionProcesses = require("../Model/ProductionSetUp");
 const KeyProcessesOption = require("../Model/KeyProcessesOption");
 
-
 const values = require("../Files/SavedValues.json");
 
-function CreateRoughingProcess(processName,minutes,processNumber,machine){
+function CreateAdditionalProcess(processName,minutes,processNumber,machine){
     let cost=0;
     if(machine=='3 Axis'){
         cost=minutes*values.Machines["Machine3AxisCostMin"];
@@ -99,7 +98,7 @@ const GetProcessCost=(material,size,processName)=>
 
 module.exports = {
     GetProcessCost,
-    CreateRoughingProcess,
+    CreateAdditionalProcess,
     Create3AxisProcess,
     Create4AxisProcess,
     Create5AxisProcess,

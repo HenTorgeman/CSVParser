@@ -9,7 +9,7 @@ const ProductionSetUpSchema = new mongoose.Schema({
     },
     ProcessName:{
         type:String,
-        enum: ['Roughing', 'Finishing','FinishingHT', 'Holes','Semi-finishing', 'Holder']
+        enum: ['Roughing', 'Finishing','Threads', 'Holes','Semi-finishing', 'Holder']
     },
     ProcessesNumber:{
         type:Number
