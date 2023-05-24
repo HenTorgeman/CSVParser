@@ -38,6 +38,7 @@ const PartAcssesability = require("../Model/PartAcssesability");
 const CRawMaterialFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CRawMaterial.csv';
 const CMrrFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/CMRR.csv';
 const CSTRFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/SurfaceTreatment.csv';
+const inputFileSTL = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/InputMD_STL.csv';
 const inputFile = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/InputFiles/InputMD.csv';
 
 const  OutputPath= '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Options based costing sheet/Automated costing/Script/OutputFiles/ODashboard.csv';
@@ -51,7 +52,8 @@ const TimesOutputPath = '/Users/hentorgeman/Dropbox (Chen Tech)/00 - Costing/Opt
 //Files
 const ReadInputFile = async (req, res, next) => {
     ConsoleStart();
-    let table =fs.readFileSync(inputFile, "utf8").split("\r\n");
+    let table =fs.readFileSync(inputFileSTL, "utf8").split("\r\n");
+    // let table =fs.readFileSync(inputFile, "utf8").split("\r\n");
     const arr=[];
     let partsCount=table.length-1;
     let genIndex=0;
@@ -702,10 +704,15 @@ const PrintFullData = async (req, res, next) => {
 
         dataRow.push(keyMachine);
         dataRow.push(keyMachineProcessNumber);
-        dataRow.push(UnitCost.toFixed(2));
-        dataRow.push(SetupCost.toFixed(2));
-        dataRow.push(UnitLeadTimeHours.toFixed(2));
-        dataRow.push(BatchLeadTimeDays.toFixed(2));
+        // dataRow.push(UnitCost.toFixed(2));
+        // dataRow.push(SetupCost.toFixed(2));
+        // dataRow.push(UnitLeadTimeHours.toFixed(2));
+        // dataRow.push(BatchLeadTimeDays.toFixed(2));
+
+        dataRow.push(-1);
+        dataRow.push(-1);
+        dataRow.push(-1);
+        dataRow.push(-1);
         dataRow.push(packingCost);
 
         data.push(dataRow);
